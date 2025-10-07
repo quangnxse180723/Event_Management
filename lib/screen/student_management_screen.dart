@@ -4,7 +4,6 @@ import '../services/student_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
-
 class StudentManagementScreen extends StatefulWidget {
   const StudentManagementScreen({super.key});
 
@@ -32,19 +31,19 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     });
   }
 
-  // Hàm tính student_id tiếp theo
+  /// Tính student_id tiếp theo (local)
   int _nextStudentId() {
     if (students.isEmpty) return 1;
-    final ids = students.map((s) => int.tryParse(s.studentId) ?? 0).toList();
+    final ids = students.map((s) => s.studentId).toList();
     return ids.reduce((a, b) => a > b ? a : b) + 1;
   }
 
   Future<void> _showStudentForm({Student? student}) async {
     final nameController = TextEditingController(text: student?.name ?? '');
     final codeController = TextEditingController(text: student?.studentCode ?? '');
-    final emailController = TextEditingController(text: student?.email ?? '');
     final phoneController = TextEditingController(text: student?.phone ?? '');
-    final uniController = TextEditingController(text: student?.universityId ?? '');
+    final uniController = TextEditingController(text: student?.universityId?.toString() ?? '');
+    final userController = TextEditingController(text: student?.userId?.toString() ?? '');
 
     await showDialog(
       context: context,
@@ -55,15 +54,30 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                TextField(controller: nameController, decoration: const InputDecoration(labelText: "Tên", border: OutlineInputBorder())),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Tên", border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 8),
-                TextField(controller: codeController, decoration: const InputDecoration(labelText: "Mã SV", border: OutlineInputBorder())),
+                TextField(
+                  controller: codeController,
+                  decoration: const InputDecoration(labelText: "Mã SV", border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 8),
-                TextField(controller: emailController, decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder())),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 8),
-                TextField(controller: phoneController, decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder())),
+                TextField(
+                  controller: uniController,
+                  decoration: const InputDecoration(labelText: "University ID", border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 8),
-                TextField(controller: uniController, decoration: const InputDecoration(labelText: "University ID", border: OutlineInputBorder())),
+                TextField(
+                  controller: userController,
+                  decoration: const InputDecoration(labelText: "User ID", border: OutlineInputBorder()),
+                ),
               ],
             ),
           ),
@@ -73,12 +87,13 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           ElevatedButton(
             onPressed: () async {
               final newStudent = Student(
-                studentId: student?.studentId ?? _nextStudentId().toString(),
+                studentId: student?.studentId ?? _nextStudentId(),
                 name: nameController.text,
                 studentCode: codeController.text,
-                email: emailController.text,
                 phone: phoneController.text,
-                universityId: uniController.text,
+                universityId: int.tryParse(uniController.text),
+                userId: int.tryParse(userController.text),
+                createdAt: student?.createdAt ?? DateTime.now(),
               );
 
               if (student == null) {
@@ -154,7 +169,6 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           ),
         ],
       ),
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -168,23 +182,36 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: Colors.blue.shade100,
-                child: Text(s.name[0].toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  s.name.isNotEmpty ? s.name[0].toUpperCase() : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              title: Text(s.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              title: Text(
+                s.name,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("Mã SV: ${s.studentCode}"),
-                  Text("Email: ${s.email}"),
                   if (s.phone.isNotEmpty) Text("SĐT: ${s.phone}"),
+                  if (s.universityId != null) Text("University ID: ${s.universityId}"),
+                  if (s.userId != null) Text("User ID: ${s.userId}"),
                 ],
               ),
               isThreeLine: true,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(icon: const Icon(Icons.edit, color: Colors.orange), onPressed: () => _showStudentForm(student: s)),
-                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteStudent(s)),
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.orange),
+                    onPressed: () => _showStudentForm(student: s),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteStudent(s),
+                  ),
                 ],
               ),
             ),

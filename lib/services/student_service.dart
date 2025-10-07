@@ -23,20 +23,34 @@ class StudentService {
   }
 
   Future<void> updateStudent(Student student) async {
-    await supabase
-        .from(studentTable)
-        .update(student.toJson())
-        .eq('student_id', int.parse(student.studentId));
+    try {
+      // Chỉ cần dựa vào student_id vì nó là unique
+      final res = await supabase
+          .from(studentTable)
+          .update(student.toJson())
+          .eq('student_id', student.studentId)
+          .select();
+
+      if (res == null || (res is List && res.isEmpty)) {
+        print('No student updated. Check studentId: ${student.studentId}');
+      } else {
+        print('Student updated successfully: $res');
+      }
+    } catch (e) {
+      print('Error updating student: $e');
+    }
   }
 
-  Future<void> deleteStudent(String studentId) async {
-    await supabase
-        .from(studentTable)
-        .delete()
-        .eq('student_id', int.parse(studentId));
+
+
+
+  Future<void> deleteStudent(int studentId) async {
+    await supabase.from(studentTable).delete().eq('student_id', studentId);
   }
 
+  /// -------------------------------
   /// Import sinh viên từ Excel
+  /// -------------------------------
   Future<List<Student>> importFromExcel(File file) async {
     final bytes = file.readAsBytesSync();
     final excel = Excel.decodeBytes(bytes);
@@ -45,14 +59,15 @@ class StudentService {
 
     for (var table in excel.tables.keys) {
       for (var row in excel.tables[table]!.rows.skip(1)) {
-        // skip header
+        // Bỏ qua header
         final s = Student(
-          studentId: row[0]?.value.toString() ?? '',
+          studentId: int.tryParse(row[0]?.value.toString() ?? '0') ?? 0,
           name: row[1]?.value.toString() ?? '',
           studentCode: row[2]?.value.toString() ?? '',
-          email: row[3]?.value.toString() ?? '',
-          phone: row[4]?.value.toString() ?? '',
-          universityId: row[5]?.value.toString() ?? '',
+          phone: row[3]?.value.toString() ?? '',
+          universityId: int.tryParse(row[4]?.value.toString() ?? ''),
+          userId: int.tryParse(row[5]?.value.toString() ?? ''),
+          createdAt: DateTime.tryParse(row[6]?.value.toString() ?? ''),
         );
         students.add(s);
       }
@@ -100,7 +115,6 @@ class StudentService {
 
   /// Đăng ký sự kiện
   Future<bool> registerEvent(int studentId, int eventId) async {
-    // Kiểm tra đã tồn tại chưa
     final exists = await supabase
         .from(studentInEventTable)
         .select()
@@ -108,9 +122,7 @@ class StudentService {
         .eq('event_id', eventId)
         .maybeSingle();
 
-    if (exists != null) {
-      return false; // đã đăng ký rồi
-    }
+    if (exists != null) return false; // đã đăng ký rồi
 
     await supabase.from(studentInEventTable).insert({
       'student_id': studentId,
@@ -130,7 +142,7 @@ class StudentService {
         .eq('student_id', studentId)
         .eq('event_id', eventId);
 
-    return deleted != null; // nếu có xóa được
+    return deleted != null;
   }
 
   /// Check xem sinh viên đã đăng ký chưa
