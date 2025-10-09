@@ -1,5 +1,5 @@
 class Student {
-  final int studentId;
+  final int studentId; // required
   final String name;
   final String studentCode;
   final String phone;
@@ -16,6 +16,27 @@ class Student {
     this.userId,
     this.createdAt,
   });
+
+  /// Factory để tạo Student trước khi insert DB
+  /// studentId sẽ dùng placeholder 0, DB sẽ cấp actual ID
+  factory Student.createForInsert({
+    required String name,
+    required String studentCode,
+    required String phone,
+    int? universityId,
+    int? userId,
+    DateTime? createdAt,
+  }) {
+    return Student(
+      studentId: 0, // placeholder
+      name: name,
+      studentCode: studentCode,
+      phone: phone,
+      universityId: universityId,
+      userId: userId,
+      createdAt: createdAt,
+    );
+  }
 
   factory Student.fromJson(Map<String, dynamic> json) {
     return Student(
@@ -38,8 +59,7 @@ class Student {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'student_id': studentId,
+    final map = {
       'name': name,
       'student_code': studentCode,
       'phone': phone,
@@ -47,5 +67,12 @@ class Student {
       'user_id': userId,
       'created_at': createdAt?.toIso8601String(),
     };
+
+    // Chỉ đưa student_id nếu không phải placeholder
+    if (studentId != 0) {
+      map['student_id'] = studentId;
+    }
+
+    return map;
   }
 }

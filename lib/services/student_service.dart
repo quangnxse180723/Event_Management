@@ -1,3 +1,4 @@
+import 'package:student_attendance/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/entities/Student.dart';
 import 'package:excel/excel.dart';
@@ -18,9 +19,23 @@ class StudentService {
         .toList();
   }
 
-  Future<void> addStudent(Student student) async {
-    await supabase.from(studentTable).insert(student.toJson());
+  Future<void> addStudent(Student student, String email, String password) async {
+    final authService = AuthService(); // import từ file AuthService của anh nha
+    final supabase = Supabase.instance.client;
+
+    // 1️ Đăng ký tài khoản trên Supabase Auth + tạo app_user (role student)
+    final userRecord = await authService.signUpStudent(email, password);
+    final appUserId = userRecord['id'];
+
+    // 2️ Thêm student mới, link tới app_user_id vừa tạo
+    final studentData = student.toJson();
+    studentData['user_id'] = appUserId;
+
+    await supabase.from(studentTable).insert(studentData);
+
+    print('✅ Student added successfully with user_id = $appUserId');
   }
+
 
   Future<void> updateStudent(Student student) async {
     try {
@@ -40,9 +55,6 @@ class StudentService {
       print('Error updating student: $e');
     }
   }
-
-
-
 
   Future<void> deleteStudent(int studentId) async {
     await supabase.from(studentTable).delete().eq('student_id', studentId);

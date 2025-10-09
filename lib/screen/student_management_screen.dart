@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/Student.dart';
+import '../services/app_user_service.dart';
 import '../services/student_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -31,86 +33,82 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     });
   }
 
-  /// Tính student_id tiếp theo (local)
-  int _nextStudentId() {
-    if (students.isEmpty) return 1;
-    final ids = students.map((s) => s.studentId).toList();
-    return ids.reduce((a, b) => a > b ? a : b) + 1;
-  }
-
   Future<void> _showStudentForm({Student? student}) async {
     final nameController = TextEditingController(text: student?.name ?? '');
     final codeController = TextEditingController(text: student?.studentCode ?? '');
     final phoneController = TextEditingController(text: student?.phone ?? '');
     final uniController = TextEditingController(text: student?.universityId?.toString() ?? '');
-    final userController = TextEditingController(text: student?.userId?.toString() ?? '');
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
 
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(student == null ? "Thêm sinh viên" : "Cập nhật sinh viên"),
         content: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: "Tên", border: OutlineInputBorder()),
-                ),
+          child: Column(
+            children: [
+              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Tên", border: OutlineInputBorder())),
+              const SizedBox(height: 8),
+              TextField(controller: codeController, decoration: const InputDecoration(labelText: "Mã SV", border: OutlineInputBorder())),
+              const SizedBox(height: 8),
+              TextField(controller: phoneController, decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder())),
+              const SizedBox(height: 8),
+              TextField(controller: uniController, decoration: const InputDecoration(labelText: "University ID", border: OutlineInputBorder())),
+              if (student == null) ...[
                 const SizedBox(height: 8),
-                TextField(
-                  controller: codeController,
-                  decoration: const InputDecoration(labelText: "Mã SV", border: OutlineInputBorder()),
-                ),
+                TextField(controller: emailController, decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder())),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: uniController,
-                  decoration: const InputDecoration(labelText: "University ID", border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: userController,
-                  decoration: const InputDecoration(labelText: "User ID", border: OutlineInputBorder()),
-                ),
+                TextField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: "Mật khẩu", border: OutlineInputBorder())),
               ],
-            ),
+            ],
           ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
           ElevatedButton(
             onPressed: () async {
-              final newStudent = Student(
-                studentId: student?.studentId ?? _nextStudentId(),
-                name: nameController.text,
-                studentCode: codeController.text,
-                phone: phoneController.text,
-                universityId: int.tryParse(uniController.text),
-                userId: int.tryParse(userController.text),
-                createdAt: student?.createdAt ?? DateTime.now(),
-              );
-
               if (student == null) {
-                await _studentService.addStudent(newStudent);
+                final newStudent = Student.createForInsert(
+                  name: nameController.text,
+                  studentCode: codeController.text,
+                  phone: phoneController.text,
+                  universityId: int.tryParse(uniController.text),
+                  createdAt: DateTime.now(),
+                );
+
+                // 👇 gọi với 3 tham số khớp định nghĩa
+                await _studentService.addStudent(
+                  newStudent,
+                  emailController.text.trim(),
+                  passwordController.text.trim(),
+                );
               } else {
-                await _studentService.updateStudent(newStudent);
+                final updatedStudent = Student(
+                  studentId: student.studentId,
+                  name: nameController.text,
+                  studentCode: codeController.text,
+                  phone: phoneController.text,
+                  universityId: int.tryParse(uniController.text),
+                  userId: student.userId,
+                  createdAt: student.createdAt,
+                );
+
+                await _studentService.updateStudent(updatedStudent);
               }
 
               if (context.mounted) Navigator.pop(context);
               _loadStudents();
             },
             child: const Text("Lưu"),
-          ),
+          )
         ],
       ),
     );
   }
+
+
+
 
   Future<void> _deleteStudent(Student s) async {
     final confirm = await showDialog<bool>(
@@ -139,22 +137,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   }
 
   Future<void> _importStudents() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx'],
-    );
-
-    if (result != null) {
-      File file = File(result.files.single.path!);
-      final imported = await _studentService.importFromExcel(file);
-
-      for (var s in imported) {
-        await _studentService.addStudent(s);
-      }
-
-      _loadStudents();
-    }
+    ///
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -225,4 +210,27 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
       ),
     );
   }
+
+  Future<void> _showStudentCredentials(String email, String password) async {
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Thông tin đăng nhập sinh viên"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Email: $email"),
+            Text("Password: $password"),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Đóng"),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
