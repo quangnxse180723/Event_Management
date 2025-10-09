@@ -1,8 +1,19 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../domain/entities/app_user.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  /// lấy thông tin người dùng bằng email
+  Future<AppUser?> getUserByEmail(String email) async {
+    final data = await _supabase
+        .from('app_user')
+        .select()
+        .eq('email', email)
+        .maybeSingle();
 
+    if (data == null) return null;
+    return AppUser.fromJson(Map<String, dynamic>.from(data));
+  }
   /// Đăng nhập với email & password
   Future<Map<String, dynamic>> signIn(String email, String password) async {
     // 1. Gọi Supabase auth

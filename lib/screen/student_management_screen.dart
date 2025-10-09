@@ -137,7 +137,38 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   }
 
   Future<void> _importStudents() async {
-    ///
+    // Mở file picker để chọn Excel file
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx'],
+    );
+
+    if (result == null || result.files.isEmpty) return; // User cancel
+    final filePath = result.files.single.path!;
+    final file = File(filePath);
+
+    // Hiển thị dialog loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _studentService.importStudentsFromExcel(file);
+      if (context.mounted) {
+        Navigator.pop(context); // tắt loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Import sinh viên thành công!')),
+        );
+        _loadStudents(); // refresh danh sách
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.pop(context); // tắt loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Lỗi khi import: $e')),
+      );
+    }
   }
 
 
