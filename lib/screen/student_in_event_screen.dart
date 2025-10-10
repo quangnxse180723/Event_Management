@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/student_in_event_model.dart';
 import '../services/student_in_event_service.dart';
+import '../services/notification_service.dart';
 
 class StudentInEventScreen extends StatefulWidget {
   final int eventId;
@@ -48,9 +49,7 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
       setState(() {
         _isLoadingEvents = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi khi tải sự kiện: $e")),
-      );
+      NotificationService.showError(context, "Lỗi khi tải sự kiện: $e");
     }
   }
 
@@ -64,22 +63,16 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
     try {
       if (value == "attended" || value == "cancelled") {
         await _service.updateStudentStatus(student.studentInEventId, value);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật trạng thái thành công!')),
-        );
+        NotificationService.showSuccess(context, 'Cập nhật trạng thái sinh viên thành công!');
       } else if (value == "delete") {
         await _service.deleteStudentFromEvent(student.studentInEventId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã xóa sinh viên khỏi sự kiện.')),
-        );
+        NotificationService.showSuccess(context, 'Đã xóa sinh viên khỏi sự kiện thành công.');
       }
       if (_selectedEventId != null) {
         _loadStudents(_selectedEventId!);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xảy ra lỗi: $e')),
-      );
+      NotificationService.showError(context, 'Đã xảy ra lỗi: $e');
     }
   }
 
@@ -97,13 +90,9 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                 if (_selectedEventId != null) {
                   _loadStudents(_selectedEventId!);
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Import Excel thành công!')),
-                );
+                NotificationService.showSuccess(context, '📄 Import sinh viên từ Excel thành công!');
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi khi import Excel: $e')),
-                );
+                NotificationService.showError(context, 'Lỗi khi import Excel: $e');
               }
             },
             tooltip: "Import từ file Excel",

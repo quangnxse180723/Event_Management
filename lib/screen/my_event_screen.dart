@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:student_attendance/screen/student_event_session_list_screen.dart';
 import '../services/student_service.dart';
+import '../services/notification_service.dart';
 
 class MyEventScreen extends StatefulWidget {
   final int userId;
@@ -41,9 +42,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
       setState(() {
         _loading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi tải sự kiện: $e")),
-      );
+      NotificationService.showError(context, "Lỗi tải sự kiện: $e");
     }
   }
 
@@ -84,9 +83,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
               ),
               onTap: () async {
                 if (_studentId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Không tìm thấy mã sinh viên.")),
-                  );
+                  NotificationService.showError(context, "Không tìm thấy mã sinh viên.");
                   return;
                 }
                 Navigator.push(

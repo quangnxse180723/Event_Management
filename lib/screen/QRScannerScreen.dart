@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -50,9 +51,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       if (existing != null) {
         // Đã điểm danh rồi
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Bạn đã được điểm danh phiên này rồi!")),
-          );
+          NotificationService.showWarning(context, "Bạn đã được điểm danh phiên này rồi!");
         }
         return;
       }
@@ -67,16 +66,15 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Điểm danh thành công ✅")),
-        );
+        NotificationService.showSuccess(context, "🎉 Điểm danh thành công! Cảm ơn bạn đã tham gia.");
+        
+        // Chờ 1.5 giây để hiển thị thông báo trước khi quay lại
+        await Future.delayed(const Duration(milliseconds: 1500));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi quét mã: $e")),
-        );
+        NotificationService.showError(context, "Lỗi khi quét mã QR: $e");
       }
     } finally {
       _isProcessing = false;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/home_screen.dart';
+import '../services/notification_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -23,6 +24,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _passwordController.text.trim(),
       );
       if (mounted) {
+        NotificationService.showSuccess(context, "Đăng ký tài khoản thành công! Chào mừng bạn tham gia hệ thống.");
+        
+        // Chờ 1 giây để hiển thị thông báo trước khi chuyển trang
+        await Future.delayed(const Duration(seconds: 1));
+        
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -34,9 +40,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      NotificationService.showError(context, "Đăng ký thất bại: ${e.toString()}");
     } finally {
       setState(() => _loading = false);
     }

@@ -5,6 +5,7 @@ import '../model/event_session_model.dart';
 import '../model/event_model.dart';
 import '../services/event_session_service.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import 'event_session_form_screen.dart';
 
 class EventSessionManagementScreen extends StatefulWidget {
@@ -73,9 +74,7 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
     } catch (e) {
       print('Lỗi khi tải danh sách sự kiện: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải sự kiện: $e')),
-        );
+        NotificationService.showError(context, 'Lỗi tải sự kiện: $e');
       }
     }
   }
@@ -117,18 +116,14 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
                   await sessionService.deleteEventSession(session.sessionId);
 
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã xóa phiên thành công!')),
-                    );
+                    NotificationService.showSuccess(context, 'Đã xóa phiên "${session.title}" thành công!');
                   }
 
                   _loadSessions();
 
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi khi xóa: $e')),
-                    );
+                    NotificationService.showError(context, 'Lỗi khi xóa phiên: $e');
                   }
                 }
               },
@@ -141,9 +136,7 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
 
   void _navigateToCreateEdit({EventSession? session}) async {
     if (selectedEvent == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn sự kiện trước')),
-      );
+      NotificationService.showWarning(context, 'Vui lòng chọn sự kiện trước khi tạo phiên');
       return;
     }
 

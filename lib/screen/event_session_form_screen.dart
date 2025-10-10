@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../model/event_session_model.dart';
 import '../services/event_session_service.dart';
+import '../services/notification_service.dart';
 
 class EventSessionFormScreen extends StatefulWidget {
   final EventSession? eventSession;
@@ -86,16 +87,12 @@ class _EventSessionFormScreenState extends State<EventSessionFormScreen> {
     }
 
     if (_startDateTime == null || _endDateTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn thời gian bắt đầu và kết thúc')),
-      );
+      NotificationService.showWarning(context, 'Vui lòng chọn thời gian bắt đầu và kết thúc');
       return;
     }
 
     if (_endDateTime!.isBefore(_startDateTime!) || _endDateTime!.isAtSameMomentAs(_startDateTime!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Thời gian kết thúc phải sau thời gian bắt đầu')),
-      );
+      NotificationService.showWarning(context, 'Thời gian kết thúc phải sau thời gian bắt đầu');
       return;
     }
 
@@ -117,28 +114,24 @@ class _EventSessionFormScreenState extends State<EventSessionFormScreen> {
         // Tạo mới
         await _sessionService.createEventSession(sessionToSave);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tạo phiên thành công!')),
-          );
+          NotificationService.showSuccess(context, '🎉 Tạo phiên mới thành công!');
         }
       } else {
         // Cập nhật
         await _sessionService.updateEventSession(sessionToSave);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cập nhật phiên thành công!')),
-          );
+          NotificationService.showSuccess(context, '✅ Cập nhật phiên thành công!');
         }
       }
 
       if (mounted) {
+        // Chờ 1 giây để hiển thị thông báo trước khi quay lại
+        await Future.delayed(const Duration(seconds: 1));
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e')),
-        );
+        NotificationService.showError(context, 'Lỗi: $e');
       }
     } finally {
       if (mounted) {

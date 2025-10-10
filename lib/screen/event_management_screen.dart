@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../app_theme.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import 'create_edit_event_screen.dart';
 
 class EventManagementScreen extends StatefulWidget {
@@ -60,9 +61,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
 
   void _handleDelete(Event event) {
     if (event.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể xóa sự kiện không có ID.')),
-      );
+      NotificationService.showError(context, 'Không thể xóa sự kiện không có ID.');
       return;
     }
 
@@ -84,16 +83,12 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                 try {
                   await apiService.deleteEvent(event.id!);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
-                    );
+                    NotificationService.showSuccess(context, 'Đã xóa sự kiện "${event.title}" thành công!');
                   }
                   _loadEvents();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi khi xóa: $e')),
-                    );
+                    NotificationService.showError(context, 'Lỗi khi xóa sự kiện: $e');
                   }
                 }
               },

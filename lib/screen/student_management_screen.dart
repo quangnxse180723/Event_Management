@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/Student.dart';
 import '../services/app_user_service.dart';
 import '../services/student_service.dart';
+import '../services/notification_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
@@ -158,16 +159,14 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
       await _studentService.importStudentsFromExcel(file);
       if (context.mounted) {
         Navigator.pop(context); // tắt loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Import sinh viên thành công!')),
-        );
+        NotificationService.showSuccess(context, '✅ Import sinh viên từ Excel thành công!');
         _loadStudents(); // refresh danh sách
       }
     } catch (e) {
-      if (context.mounted) Navigator.pop(context); // tắt loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Lỗi khi import: $e')),
-      );
+      if (context.mounted) {
+        Navigator.pop(context); // tắt loading
+        NotificationService.showError(context, '❌ Lỗi khi import: $e');
+      }
     }
   }
 

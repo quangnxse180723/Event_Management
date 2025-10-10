@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Thêm thư viện intl để format ngày tháng
 import '../services/student_service.dart';
+import '../services/notification_service.dart';
 
 class EventListScreen extends StatefulWidget {
   final int userId;
@@ -35,9 +36,7 @@ class _EventListScreenState extends State<EventListScreen> {
 
       if (studentRow == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không tìm thấy thông tin sinh viên!")),
-        );
+        NotificationService.showError(context, "Không tìm thấy thông tin sinh viên!");
         setState(() => _loading = false);
         return;
       }
@@ -74,9 +73,7 @@ class _EventListScreenState extends State<EventListScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi tải sự kiện: $e")),
-      );
+      NotificationService.showError(context, "Lỗi tải sự kiện: $e");
       setState(() => _loading = false);
     }
   }
@@ -91,9 +88,7 @@ class _EventListScreenState extends State<EventListScreen> {
           .maybeSingle();
 
       if (studentRow == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không tìm thấy sinh viên!")),
-        );
+        NotificationService.showError(context, "Không tìm thấy sinh viên!");
         return;
       }
 
@@ -107,9 +102,7 @@ class _EventListScreenState extends State<EventListScreen> {
           .maybeSingle();
 
       if (existing != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Bạn đã đăng ký sự kiện này rồi!")),
-        );
+        NotificationService.showWarning(context, "Bạn đã đăng ký sự kiện này rồi!");
         return;
       }
 
@@ -119,13 +112,10 @@ class _EventListScreenState extends State<EventListScreen> {
         _events[index]['registered'] = true;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đăng ký thành công!")),
-      );
+      final eventTitle = _events[index]['title'] ?? 'sự kiện';
+      NotificationService.showSuccess(context, "🎉 Đăng ký sự kiện '$eventTitle' thành công!");
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi đăng ký: $e")),
-      );
+      NotificationService.showError(context, "Lỗi đăng ký sự kiện: $e");
     }
   }
 

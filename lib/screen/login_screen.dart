@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/home_screen.dart';
 import '../screen/sign_up_screen.dart';
+import '../services/notification_service.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -26,6 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
+        NotificationService.showSuccess(context, "Đăng nhập thành công! Chào mừng bạn đến với hệ thống.");
+        
+        // Chờ 1 giây để hiển thị thông báo trước khi chuyển trang
+        await Future.delayed(const Duration(seconds: 1));
+        
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -38,9 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      NotificationService.showError(context, "Đăng nhập thất bại: ${e.toString()}");
     } finally {
       setState(() => _loading = false);
     }
