@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../app_theme.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 import 'create_edit_event_screen.dart';
 
 class EventManagementScreen extends StatefulWidget {
@@ -39,6 +40,14 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
     });
   }
 
+  void _refreshEvents() {
+    _loadEvents();
+    NotificationService.showInfo(
+      context,
+      'Đã làm mới danh sách sự kiện 🔄',
+    );
+  }
+
   // SỬA: Tạo hàm điều hướng dùng chung để tránh lặp code
   void _navigateToCreateEditScreen({Event? event}) {
     Navigator.push<bool>( // Chờ kết quả trả về là bool
@@ -60,8 +69,9 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
 
   void _handleDelete(Event event) {
     if (event.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể xóa sự kiện không có ID.')),
+      NotificationService.showWarning(
+        context,
+        'Không thể xóa sự kiện không có ID ⚠️',
       );
       return;
     }
@@ -84,15 +94,17 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                 try {
                   await apiService.deleteEvent(event.id!);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
+                    NotificationService.showSuccess(
+                      context,
+                      'Đã xóa sự kiện thành công! 🗑️',
                     );
                   }
                   _loadEvents();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Lỗi khi xóa: $e')),
+                    NotificationService.showError(
+                      context,
+                      'Lỗi khi xóa sự kiện: $e',
                     );
                   }
                 }
@@ -112,7 +124,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadEvents,
+            onPressed: _refreshEvents,
           ),
         ],
       ),
@@ -123,12 +135,21 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
+            // Hiển thị thông báo lỗi
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              NotificationService.showError(
+                context,
+                'Lỗi tải dữ liệu sự kiện: ${snapshot.error}',
+              );
+            });
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
                     Text('Lỗi tải dữ liệu: ${snapshot.error}', textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     ElevatedButton(onPressed: _loadEvents, child: const Text('Thử lại'))
