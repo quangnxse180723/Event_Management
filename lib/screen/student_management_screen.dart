@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/Student.dart';
 import '../services/app_user_service.dart';
 import '../services/student_service.dart';
+import '../services/notification_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
@@ -137,7 +138,36 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   }
 
   Future<void> _importStudents() async {
-    ///
+    // Mở file picker để chọn Excel file
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx'],
+    );
+
+    if (result == null || result.files.isEmpty) return; // User cancel
+    final filePath = result.files.single.path!;
+    final file = File(filePath);
+
+    // Hiển thị dialog loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await _studentService.importStudentsFromExcel(file);
+      if (context.mounted) {
+        Navigator.pop(context); // tắt loading
+        NotificationService.showSuccess(context, '✅ Import sinh viên từ Excel thành công!');
+        _loadStudents(); // refresh danh sách
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // tắt loading
+        NotificationService.showError(context, '❌ Lỗi khi import: $e');
+      }
+    }
   }
 
 

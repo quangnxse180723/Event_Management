@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../screen/login_screen.dart';
-import '../theme_provider.dart'; // SỬA: Import ThemeProvider
+import '../theme_provider.dart';
 import '../screen/change_password_screen.dart';
+import '../services/notification_service.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -22,17 +24,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadAppVersion();
   }
+
   Future<void> _logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
-    // Sau khi logout, quay về LoginScreen và remove hết các màn hình trước đó
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
+      (route) => false,
     );
   }
+
   Future<void> _loadAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    // SỬA: Kiểm tra `mounted` để tránh lỗi
     if (mounted) {
       setState(() {
         _appVersion = packageInfo.version;
@@ -42,41 +44,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _handleLogout() async {
     try {
+      NotificationService.showSuccess(context, "Đã đăng xuất thành công! Hẹn gặp lại bạn.");
+      
+      await Future.delayed(const Duration(seconds: 1));
+      
       await supabase.auth.signOut();
       if (mounted) {
-        // TODO: Điều hướng về màn hình đăng nhập
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã đăng xuất thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _logout(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi khi đăng xuất: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, "Lỗi khi đăng xuất: $e");
       }
     }
   }
 
   void _launchURL(String url) async {
     final uri = Uri.parse(url);
-    // SỬA: Cập nhật cách gọi `launchUrl` cho phiên bản mới
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể mở liên kết: $url')),
-        );
+      if (mounted) {
+        NotificationService.showError(context, 'Không thể mở liên kết: $url');
       }
     }
   }
 
-  // SỬA: Thêm hàm hiển thị dialog chọn giao diện
   void _showThemeDialog() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     showDialog(
@@ -88,26 +79,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<ThemeMode>(
-                title: const Text('Sáng'), value: ThemeMode.light,
+                title: const Text('Sáng'),
+                value: ThemeMode.light,
                 groupValue: themeProvider.themeMode,
                 onChanged: (value) {
-                  if (value != null) themeProvider.setThemeMode(value);
+                  if (value != null) {
+                    themeProvider.setThemeMode(value);
+                    NotificationService.showInfo(context, "Đã chuyển sang giao diện sáng");
+                  }
                   Navigator.of(context).pop();
                 },
               ),
               RadioListTile<ThemeMode>(
-                title: const Text('Tối'), value: ThemeMode.dark,
+                title: const Text('Tối'),
+                value: ThemeMode.dark,
                 groupValue: themeProvider.themeMode,
                 onChanged: (value) {
-                  if (value != null) themeProvider.setThemeMode(value);
+                  if (value != null) {
+                    themeProvider.setThemeMode(value);
+                    NotificationService.showInfo(context, "Đã chuyển sang giao diện tối");
+                  }
                   Navigator.of(context).pop();
                 },
               ),
               RadioListTile<ThemeMode>(
-                title: const Text('Theo hệ thống'), value: ThemeMode.system,
+                title: const Text('Theo hệ thống'),
+                value: ThemeMode.system,
                 groupValue: themeProvider.themeMode,
                 onChanged: (value) {
-                  if (value != null) themeProvider.setThemeMode(value);
+                  if (value != null) {
+                    themeProvider.setThemeMode(value);
+                    NotificationService.showInfo(context, "Đã chuyển về giao diện theo hệ thống");
+                  }
                   Navigator.of(context).pop();
                 },
               ),
@@ -161,8 +164,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Đăng xuất',
               style: TextStyle(color: Colors.red.shade700),
             ),
-            // Khi người dùng nhấn vào, gọi hàm _logout
-            onTap: () => _logout(context),
+            // Khi người dùng nhấn vào, gọi hàm _handleLogout
+            onTap: () => _handleLogout(),
           ),
           const Divider(height: 32),
 

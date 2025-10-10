@@ -63,30 +63,72 @@ class StudentService {
   /// -------------------------------
   /// Import sinh viên từ Excel
   /// -------------------------------
-  Future<List<Student>> importFromExcel(File file) async {
+  Future<void> importStudentsFromExcel(File file) async {
     final bytes = file.readAsBytesSync();
     final excel = Excel.decodeBytes(bytes);
-
-    List<Student> students = [];
+    final authService = AuthService();
 
     for (var table in excel.tables.keys) {
-      for (var row in excel.tables[table]!.rows.skip(1)) {
-        // Bỏ qua header
-        final s = Student(
-          studentId: int.tryParse(row[0]?.value.toString() ?? '0') ?? 0,
-          name: row[1]?.value.toString() ?? '',
-          studentCode: row[2]?.value.toString() ?? '',
-          phone: row[3]?.value.toString() ?? '',
-          universityId: int.tryParse(row[4]?.value.toString() ?? ''),
-          userId: int.tryParse(row[5]?.value.toString() ?? ''),
-          createdAt: DateTime.tryParse(row[6]?.value.toString() ?? ''),
-        );
-        students.add(s);
+      final sheet = excel.tables[table]!;
+      final rows = sheet.rows;
+
+      // Giả sử header nằm ở hàng đầu tiên
+      for (var i = 1; i < rows.length; i++) {
+        final row = rows[i];
+
+        final name = row[0]?.value.toString() ?? '';
+        final studentCode = row[1]?.value.toString() ?? '';
+        final phone = row[2]?.value.toString() ?? '';
+        final universityId = int.tryParse(row[3]?.value.toString() ?? '');
+        final email = row[4]?.value.toString() ?? '';
+        final passwordValue = row[5]?.value?.toString().trim() ?? '';
+        final password = passwordValue.isEmpty ? '123456' : passwordValue;
+
+
+        if (email.isEmpty) {
+          print('⚠️ Bỏ qua dòng $i: thiếu email.');
+          continue;
+        }
+
+        try {
+          // 1️⃣ Kiểm tra user đã tồn tại chưa
+          final existingUser = await authService.getUserByEmail(email);
+
+          int appUserId;
+
+          if (existingUser == null) {
+            // 2️⃣ Nếu chưa có, tạo user mới
+            final userRecord = await authService.signUpStudent(email, password);
+            appUserId = userRecord['id'];
+            print('✅ Đã tạo user mới cho $email (user_id: $appUserId)');
+          } else {
+            appUserId = existingUser.userId; // hoặc existingUser['user_id'] nếu map
+            print('ℹ️ User đã tồn tại cho $email (user_id: $appUserId)');
+          }
+
+          // 3️⃣ Tạo đối tượng Student
+          final newStudent = Student.createForInsert(
+            name: name,
+            studentCode: studentCode,
+            phone: phone,
+            universityId: universityId,
+            userId: appUserId,
+            createdAt: DateTime.now(),
+          );
+
+          // 4️⃣ Thêm vào DB
+          await supabase.from(studentTable).insert(newStudent.toJson());
+
+          print('🎓 Đã thêm sinh viên: $name ($email)');
+        } catch (e) {
+          print('❌ Lỗi dòng $i ($email): $e');
+        }
       }
     }
 
-    return students;
+    print('✅ Hoàn tất import sinh viên từ file Excel!');
   }
+
 
   /// -------------------------------
   /// Event logic

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../app_theme.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
+import '../services/notification_service.dart';
 
 class CreateEditEventScreen extends StatefulWidget {
   final Event? event;
@@ -67,9 +68,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải danh sách Organizer: $e')),
-        );
+        NotificationService.showError(context, 'Lỗi tải danh sách Organizer: $e');
       }
     } finally {
       if (mounted) setState(() => _isOrganizersLoading = false);
@@ -106,15 +105,11 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     final isFormValid = _formKey.currentState?.validate() ?? false;
     if (!isFormValid) return;
     if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày bắt đầu và kết thúc')),
-      );
+      NotificationService.showWarning(context, 'Vui lòng chọn ngày bắt đầu và kết thúc');
       return;
     }
     if (widget.role == 'admin' && _selectedOrganizerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn một Organizer để gán')),
-      );
+      NotificationService.showWarning(context, 'Vui lòng chọn một Organizer để gán');
       return;
     }
 
@@ -136,16 +131,20 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         await _apiService.createEvent(data);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isEditMode ? 'Cập nhật thành công!' : 'Tạo thành công!')),
-      );
+      
+      if (_isEditMode) {
+        NotificationService.showSuccess(context, '✅ Cập nhật sự kiện thành công!');
+      } else {
+        NotificationService.showSuccess(context, '🎉 Tạo sự kiện mới thành công!');
+      }
+      
+      // Chờ 1 giây để hiển thị thông báo trước khi quay lại
+      await Future.delayed(const Duration(seconds: 1));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       final errorMessage = e.toString().replaceFirst("Exception: ", "");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã xảy ra lỗi: $errorMessage')),
-      );
+      NotificationService.showError(context, 'Đã xảy ra lỗi: $errorMessage');
     } finally {
       if (mounted) setState(() { _isLoading = false; });
     }

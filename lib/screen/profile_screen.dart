@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/notification_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final int userId;
@@ -73,9 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _loading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải dữ liệu: $e')),
-      );
+      NotificationService.showError(context, 'Lỗi tải dữ liệu: $e');
     }
   }
 
@@ -83,9 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final supabase = Supabase.instance.client;
     try {
       if (_universityId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bạn phải chọn trường đại học')),
-        );
+        NotificationService.showWarning(context, 'Bạn phải chọn trường đại học');
         return;
       }
 
@@ -105,9 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _editing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo hồ sơ thành công')),
-        );
+        NotificationService.showSuccess(context, '🎉 Tạo hồ sơ thành công!');
       } else {
         print("👉 Updating student_id = $_studentId");
 
@@ -122,9 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         print("✅ Update result: $updated");
 
         if (updated.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không tìm thấy hồ sơ để cập nhật')),
-          );
+          NotificationService.showError(context, 'Không tìm thấy hồ sơ để cập nhật');
           return;
         }
 
@@ -132,14 +125,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _editing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật thành công')),
-        );
+        NotificationService.showSuccess(context, '✅ Cập nhật hồ sơ thành công!');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lưu thất bại: $e')),
-      );
+      NotificationService.showError(context, 'Lưu thất bại: $e');
     }
   }
 

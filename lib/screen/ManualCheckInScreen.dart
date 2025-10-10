@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/SessionCheckInService.dart';
+import '../services/notification_service.dart';
 
 class ManualCheckinScreen extends StatefulWidget {
   final int sessionId;
@@ -35,20 +36,11 @@ class _ManualCheckinScreenState extends State<ManualCheckinScreen> {
     );
 
     if (mounted) {
-      String message;
-      Color backgroundColor;
-
       if (success) {
-        message = 'Điểm danh thành công!';
-        backgroundColor = Colors.green;
+        NotificationService.showSuccess(context, '✅ Điểm danh thành công!');
       } else {
-        message = 'Sinh viên đã được điểm danh hoặc có lỗi xảy ra.';
-        backgroundColor = Colors.red;
+        NotificationService.showError(context, 'Sinh viên đã được điểm danh hoặc có lỗi xảy ra.');
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: backgroundColor),
-      );
 
       // Always refresh the list to show current status
       setState(() {

@@ -30,33 +30,28 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
     _loadEvents();
   }
 
-  Future<void> _loadEvents() async {
+  void _loadEvents() {
     setState(() {
       _futureEvents = apiService.fetchEvents(
         role: widget.role,
         userId: widget.userId,
       );
     });
-    // Bắt lỗi ở đây để tránh Unhandled Exception nếu Future thất bại
-    // và lỗi sẽ được hiển thị bởi FutureBuilder.
-    try {
-      await _futureEvents;
-    } catch (_) {
-      // Bỏ qua lỗi ở đây vì nó sẽ được xử lý trong FutureBuilder
-    }
   }
 
+  // SỬA: Tạo hàm điều hướng dùng chung để tránh lặp code
   void _navigateToCreateEditScreen({Event? event}) {
-    Navigator.push<bool>(
+    Navigator.push<bool>( // Chờ kết quả trả về là bool
       context,
       MaterialPageRoute(
         builder: (context) => CreateEditEventScreen(
           event: event,
           userId: widget.userId,
-          role: widget.role,
+          role: widget.role,// Luôn truyền userId
         ),
       ),
     ).then((result) {
+      // Nếu màn hình con trả về true (có thay đổi), thì mới tải lại danh sách
       if (result == true) {
         _loadEvents();
       }
@@ -85,32 +80,22 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
             TextButton(
               child: const Text('Xóa', style: TextStyle(color: Colors.red)),
               onPressed: () async {
-                // Đóng dialog xác nhận trước
                 Navigator.of(dialogContext).pop();
-
-                // === SỬA LỖI: SỬ DỤNG TRY-CATCH ===
                 try {
-                  // Gọi hàm delete. Nếu có lỗi, nó sẽ nhảy vào khối catch.
                   await apiService.deleteEvent(event.id!);
-
-                  // Nếu không có lỗi, tức là đã xóa thành công.
-                  if (!mounted) return;
-
-                  // Hiển thị thông báo thành công và tải lại danh sách.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
-                  );
-                  _loadEvents(); // Tải lại danh sách sự kiện
-
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Đã xóa sự kiện thành công!')),
+                    );
+                  }
+                  _loadEvents();
                 } catch (e) {
-                  // Nếu có lỗi xảy ra trong quá trình xóa.
-                  if (!mounted) return;
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Xóa thất bại: ${e.toString()}')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Lỗi khi xóa: $e')),
+                    );
+                  }
                 }
-                // ======================================
               },
             ),
           ],
@@ -162,16 +147,6 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
             itemCount: events.length,
             itemBuilder: (context, index) {
               final event = events[index];
-              final start = event.startDate;
-              final end = event.endDate;
-
-              final startText = (start != null)
-                  ? DateFormat('dd/MM/yyyy').format(start)
-                  : '—';
-              final endText = (end != null)
-                  ? DateFormat('dd/MM/yyyy').format(end)
-                  : '—';
-
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8.0),
                 elevation: 3,
@@ -179,12 +154,13 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                   title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(
                       'Tổ chức bởi: ${event.organizer}\n'
-                          'Từ $startText đến $endText'),
+                          'Từ ${DateFormat('dd/MM/yyyy').format(event.startDate)} đến ${DateFormat('dd/MM/yyyy').format(event.endDate)}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: AppColors.primary),
+                        // SỬA: Gọi hàm điều hướng để sửa
                         onPressed: () => _navigateToCreateEditScreen(event: event),
                       ),
                       IconButton(
@@ -201,6 +177,7 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
       ),
       floatingActionButton: (widget.role == 'admin' || widget.role == 'organizer')
           ? FloatingActionButton(
+        // SỬA: Gọi hàm điều hướng để tạo mới
         onPressed: () => _navigateToCreateEditScreen(),
         backgroundColor: AppColors.accent,
         child: const Icon(Icons.add, color: Colors.white),
