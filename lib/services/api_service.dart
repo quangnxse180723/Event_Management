@@ -123,14 +123,26 @@ class ApiService {
   /// Xóa một sự kiện và các dữ liệu liên quan.
   Future<void> deleteEvent(int eventId) async {
     try {
-      // Để đảm bảo an toàn, nên gọi RPC function trên Supabase để xóa
-      // thay vì xóa từng bảng từ client. Tuy nhiên, cách này vẫn hoạt động.
+      // 1. Xóa các bản ghi có khóa ngoại trỏ tới sự kiện này trước
       await supabase.from('student_in_event').delete().eq('event_id', eventId);
-      await supabase.from('event_session').delete().eq('event_id', eventId); // Thêm xóa session
-      await supabase.from('event').delete().eq('event_id', eventId);
-    } catch (e) {
-      print('Lỗi khi xóa sự kiện: $e');
-      throw Exception('Xóa sự kiện thất bại.');
+      await supabase.from('event_session').delete().eq('event_id', eventId);
+
+      // 2. SỬA LỖI: Xóa `.select()` để thực hiện hành động DELETE
+      // Câu lệnh này bây giờ sẽ thực sự xóa sự kiện khỏi database.
+      await supabase
+          .from('event')
+          .delete()
+          .eq('event_id', eventId);
+
+      print('Đã gửi yêu cầu xóa thành công cho event_id: $eventId');
+
+    } catch (e, st) {
+      print('Lỗi khi xóa sự kiện: $e\n$st');
+      if (e is PostgrestException) {
+        print('Postgrest message: ${e.message}');
+        throw Exception('Lỗi từ server khi xóa sự kiện: ${e.message}');
+      }
+      throw Exception('Lỗi không xác định khi xóa sự kiện: $e');
     }
   }
 }
