@@ -19,23 +19,60 @@ class StudentService {
         .toList();
   }
 
+// Trong class StudentService
+
+// Trong class StudentService
+// ✨ PHIÊN BẢN NÂNG CẤP (giống logic hàm import) ✨
+
   Future<void> addStudent(Student student, String email, String password) async {
-    final authService = AuthService(); // import từ file AuthService của anh nha
-    final supabase = Supabase.instance.client;
 
-    // 1️ Đăng ký tài khoản trên Supabase Auth + tạo app_user (role student)
-    final userRecord = await authService.signUpStudent(email, password);
-    final appUserId = userRecord['id'];
+    // Bỏ hết logic cũ (AuthService, dọn dẹp, rollback...)
 
-    // 2️ Thêm student mới, link tới app_user_id vừa tạo
-    final studentData = student.toJson();
-    studentData['user_id'] = appUserId;
+    try {
+      // 1. Gọi thẳng "Hàm Thần" (RPC) vừa tạo
+      //    và truyền tất cả tham số vào
+      final response = await supabase.rpc('fn_create_student_and_user', params: {
+        'p_email': email,
+        'p_password': password,
+        'p_name': student.name,
+        'p_student_code': student.studentCode,
+        'p_phone': student.phone,
+        'p_university_id': student.universityId,
+      });
 
-    await supabase.from(studentTable).insert(studentData);
+      // 2. (Optional) In ra log thành công
+      // Hàm RPC của mình trả về student_id mới
+      print('✅ [RPC] Tạo user và student THÀNH CÔNG! Student ID mới là: $response');
 
-    print('✅ Student added successfully with user_id = $appUserId');
+    } on PostgrestException catch (error) {
+      // 3. Bắt lỗi từ CSDL
+      // Nếu CSDL ném lỗi (ví dụ: email trùng, mã SV trùng)
+      // nó sẽ bị bắt ở đây
+      print('❌ [RPC] Lỗi từ CSDL: ${error.message}');
+
+      // 4. Ném ra thông báo lỗi thân thiện cho UI (màn hình) bắt
+
+      // Check lỗi trùng email
+      if (error.message.contains('app_user_email_key') ||
+          error.message.contains('users_email_key')) {
+        throw Exception('Email này đã tồn tại. Vui lòng dùng email khác.');
+      }
+
+      // Check lỗi trùng Mã SV (anh thay 'student_student_code_key'
+      // bằng tên 'unique constraint' của cột student_code nha)
+      if (error.message.contains('student_student_code_key')) {
+        throw Exception('Mã sinh viên [${student.studentCode}] này đã tồn tại.');
+      }
+
+      // Lỗi chung
+      throw Exception('Lỗi CSDL: ${error.message}'); // Ném lỗi gốc
+
+    } catch (e) {
+      // Các lỗi chung khác (ví dụ: mất mạng)
+      print('❌ [RPC] Lỗi chung: $e');
+      throw Exception('Đã có lỗi không xác định xảy ra.');
+    }
   }
-
 
   Future<void> updateStudent(Student student) async {
     try {

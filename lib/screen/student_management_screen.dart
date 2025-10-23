@@ -69,37 +69,62 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
           ElevatedButton(
             onPressed: () async {
-              if (student == null) {
-                final newStudent = Student.createForInsert(
-                  name: nameController.text,
-                  studentCode: codeController.text,
-                  phone: phoneController.text,
-                  universityId: int.tryParse(uniController.text),
-                  createdAt: DateTime.now(),
-                );
 
-                // 👇 gọi với 3 tham số khớp định nghĩa
-                await _studentService.addStudent(
-                  newStudent,
-                  emailController.text.trim(),
-                  passwordController.text.trim(),
-                );
-              } else {
-                final updatedStudent = Student(
-                  studentId: student.studentId,
-                  name: nameController.text,
-                  studentCode: codeController.text,
-                  phone: phoneController.text,
-                  universityId: int.tryParse(uniController.text),
-                  userId: student.userId,
-                  createdAt: student.createdAt,
-                );
+              // ✨ BỌC BẰNG TRY...CATCH Ở ĐÂY ✨
+              try {
+                // (Optional) Anh có thể thêm dialog loading ở đây
 
-                await _studentService.updateStudent(updatedStudent);
+                if (student == null) {
+                  final newStudent = Student.createForInsert(
+                    name: nameController.text,
+                    studentCode: codeController.text,
+                    phone: phoneController.text,
+                    universityId: int.tryParse(uniController.text),
+                    createdAt: DateTime.now(),
+                  );
+
+                  // Hàm này sẽ ném lỗi nếu email trùng
+                  await _studentService.addStudent(
+                    newStudent,
+                    emailController.text.trim(),
+                    passwordController.text.trim(),
+                  );
+
+                  // Nếu không lỗi, thông báo thành công
+                  if (context.mounted) {
+                    NotificationService.showSuccess(context, 'Thêm sinh viên thành công!');
+                  }
+
+                } else {
+                  // Logic update (anh cũng nên bọc try...catch cho cả update)
+                  final updatedStudent = Student(
+                    studentId: student.studentId,
+                    name: nameController.text,
+                    studentCode: codeController.text,
+                    phone: phoneController.text,
+                    universityId: int.tryParse(uniController.text),
+                    userId: student.userId,
+                    createdAt: student.createdAt,
+                  );
+                  await _studentService.updateStudent(updatedStudent);
+
+                  if (context.mounted) {
+                    NotificationService.showSuccess(context, 'Cập nhật thành công!');
+                  }
+                }
+
+                // Nếu mọi thứ êm đẹp: đóng dialog và tải lại danh sách
+                if (context.mounted) Navigator.pop(context);
+                _loadStudents();
+
+              } catch (e) {
+                // ✨ BẮT LỖI TỪ SERVICE VÀ HIỂN THỊ RA CHO NGƯỜI DÙNG ✨
+                print('❌ Lỗi bị bắt ở UI: $e');
+                if (context.mounted) {
+                  // Hiển thị lỗi (ví dụ: "Email này đã tồn tại")
+                  NotificationService.showError(context, '❌ Lỗi: $e');
+                }
               }
-
-              if (context.mounted) Navigator.pop(context);
-              _loadStudents();
             },
             child: const Text("Lưu"),
           )
@@ -132,8 +157,17 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     );
 
     if (confirm == true) {
-      await _studentService.deleteStudent(s.studentId);
-      _loadStudents();
+      try {
+        await _studentService.deleteStudent(s.studentId);
+        if (context.mounted) {
+          NotificationService.showSuccess(context, 'Đã xóa ${s.name}');
+        }
+        _loadStudents();
+      } catch (e) {
+        if (context.mounted) {
+          NotificationService.showError(context, '❌ Lỗi khi xóa: $e');
+        }
+      }
     }
   }
 
