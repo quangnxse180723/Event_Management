@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../app_theme.dart';
+import '../widgets/main_layout.dart'; // thêm để dùng layout nền gradient
 
 enum StatsType { byUniversity, byEvent, byDate }
 
@@ -28,15 +29,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Map<String, int> _processData(List<Map<String, dynamic>> data) {
     Map<String, int> statsMap = {};
-
     for (var record in data) {
       String key;
-      // SỬA: Truy cập vào đúng cấu trúc dữ liệu mới
       final eventData = record['event'];
       final studentData = record['student'];
-
-      if (studentData == null)
-        continue; // Bỏ qua nếu không có thông tin sinh viên
+      if (studentData == null) continue;
 
       switch (_selectedStatsType) {
         case StatsType.byUniversity:
@@ -46,8 +43,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           key = eventData?['title'] ?? 'Không rõ';
           break;
         case StatsType.byDate:
-          final date =
-              eventData?['start_date']; // Dùng start_date từ bảng event
+          final date = eventData?['start_date'];
           if (date != null) {
             key = DateFormat('dd/MM/yyyy').format(DateTime.parse(date));
           } else {
@@ -71,178 +67,217 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
   }
 
-  // ... Phần còn lại của file (Widget build) giữ nguyên, không cần thay đổi ...
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Thống kê chi tiết'),
-        backgroundColor: AppColors.primary,
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SegmentedButton<StatsType>(
-              segments: const [
-                ButtonSegment(
-                  value: StatsType.byUniversity,
-                  label: Text('Theo Trường'),
-                  icon: Icon(Icons.school),
-                ),
-                ButtonSegment(
-                  value: StatsType.byEvent,
-                  label: Text('Theo Sự kiện'),
-                  icon: Icon(Icons.event),
-                ),
-                ButtonSegment(
-                  value: StatsType.byDate,
-                  label: Text('Theo Ngày'),
-                  icon: Icon(Icons.date_range),
-                ),
-              ],
-              selected: {_selectedStatsType},
-              onSelectionChanged: (Set<StatsType> newSelection) {
-                setState(() {
-                  _selectedStatsType = newSelection.first;
-                });
-              },
-              style: SegmentedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                foregroundColor: AppColors.primary,
-                selectedForegroundColor: Colors.white,
-                selectedBackgroundColor: AppColors.primary,
+    return MainLayout(
+      useScrollView: false,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "Thống kê chi tiết",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _attendanceDataFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Lỗi: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Text('Không có dữ liệu để thống kê.'),
-                  );
-                }
 
-                final statsData = _processData(snapshot.data!);
+            // ✅ Nội dung chính
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SegmentedButton<StatsType>(
+                        segments: const [
+                          ButtonSegment(
+                            value: StatsType.byUniversity,
+                            label: Text('Theo Trường'),
+                            icon: Icon(Icons.school),
+                          ),
+                          ButtonSegment(
+                            value: StatsType.byEvent,
+                            label: Text('Theo Sự kiện'),
+                            icon: Icon(Icons.event),
+                          ),
+                          ButtonSegment(
+                            value: StatsType.byDate,
+                            label: Text('Theo Ngày'),
+                            icon: Icon(Icons.date_range),
+                          ),
+                        ],
+                        selected: {_selectedStatsType},
+                        onSelectionChanged: (Set<StatsType> newSelection) {
+                          setState(() {
+                            _selectedStatsType = newSelection.first;
+                          });
+                        },
+                        style: SegmentedButton.styleFrom(
+                          backgroundColor: Colors.grey[200],
+                          foregroundColor: AppColors.primary,
+                          selectedForegroundColor: Colors.white,
+                          selectedBackgroundColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _attendanceDataFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return Center(child: Text('Lỗi: ${snapshot.error}'));
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Text('Không có dữ liệu để thống kê.'),
+                            );
+                          }
 
-                final sortedData = statsData.entries.toList()
-                  ..sort((a, b) => b.value.compareTo(a.value));
+                          final statsData = _processData(snapshot.data!);
+                          final sortedData = statsData.entries.toList()
+                            ..sort((a, b) => b.value.compareTo(a.value));
 
-                if (sortedData.isEmpty) {
-                  return const Center(
-                    child: Text('Không có dữ liệu hợp lệ để hiển thị.'),
-                  );
-                }
+                          if (sortedData.isEmpty) {
+                            return const Center(
+                              child: Text('Không có dữ liệu hợp lệ để hiển thị.'),
+                            );
+                          }
 
-                return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY:
-                          (sortedData.isNotEmpty
-                              ? sortedData.first.value.toDouble()
-                              : 10.0) *
-                          1.2,
-                      barTouchData: BarTouchData(
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (group) => Colors.blueGrey,
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            return BarTooltipItem(
-                              '${sortedData[group.x.toInt()].key}\n',
-                              const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              children: <TextSpan>[
-                                TextSpan(
-                                  text: rod.toY.round().toString(),
-                                  style: const TextStyle(
-                                    color: Colors.yellow,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+                          return Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: (sortedData.isNotEmpty
+                                    ? sortedData.first.value.toDouble()
+                                    : 10.0) *
+                                    1.2,
+                                barTouchData: BarTouchData(
+                                  touchTooltipData: BarTouchTooltipData(
+                                    getTooltipColor: (group) => Colors.blueGrey,
+                                    getTooltipItem:
+                                        (group, groupIndex, rod, rodIndex) {
+                                      return BarTooltipItem(
+                                        '${sortedData[group.x.toInt()].key}\n',
+                                        const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        children: <TextSpan>[
+                                          TextSpan(
+                                            text: rod.toY.round().toString(),
+                                            style: const TextStyle(
+                                              color: Colors.yellow,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 100,
-                            getTitlesWidget: (value, meta) {
-                              final index = value.toInt();
-                              if (index >= sortedData.length) return const SizedBox.shrink();
-                              final text = sortedData[index].key;
-                              return Text(
-                                text,
-                                style: const TextStyle(fontSize: 10),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                                textAlign: TextAlign.center,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      barGroups: sortedData.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final data = entry.value;
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: data.value.toDouble(),
-                              color: AppColors.primary,
-                              width: 20,
-                              borderRadius: BorderRadius.circular(4),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  topTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: const AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 100,
+                                      getTitlesWidget: (value, meta) {
+                                        final index = value.toInt();
+                                        if (index >= sortedData.length) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        final text = sortedData[index].key;
+                                        return Text(
+                                          text,
+                                          style: const TextStyle(fontSize: 10),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                          textAlign: TextAlign.center,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                borderData: FlBorderData(show: false),
+                                barGroups:
+                                sortedData.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final data = entry.value;
+                                  return BarChartGroupData(
+                                    x: index,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: data.value.toDouble(),
+                                        color: AppColors.primary,
+                                        width: 20,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                                gridData: FlGridData(
+                                  show: true,
+                                  drawVerticalLine: false,
+                                  getDrawingHorizontalLine: (value) {
+                                    return const FlLine(
+                                      color: Colors.grey,
+                                      strokeWidth: 0.5,
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
-                          ],
-                        );
-                      }).toList(),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) {
-                          return const FlLine(
-                            color: Colors.grey,
-                            strokeWidth: 0.5,
                           );
                         },
                       ),
                     ),
-                  ),
-                );
-              },
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _getChartTitle(),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              _getChartTitle(),
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

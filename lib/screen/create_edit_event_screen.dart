@@ -5,6 +5,7 @@ import '../app_theme.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/main_layout.dart';
 
 class CreateEditEventScreen extends StatefulWidget {
   final Event? event;
@@ -57,7 +58,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   Future<void> _loadOrganizers() async {
     setState(() => _isOrganizersLoading = true);
     try {
-      final List<Map<String, dynamic>> data = await _apiService.fetchOrganizers();
+      final data = await _apiService.fetchOrganizers();
       setState(() {
         _organizers = data;
         if (_isEditMode && _selectedOrganizerId != null) {
@@ -113,9 +114,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; });
+    setState(() => _isLoading = true);
 
-    final Map<String, dynamic> data = {
+    final data = {
       'title': _titleController.text,
       'description': _descriptionController.text,
       'organizer': _organizerController.text,
@@ -131,78 +132,73 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         await _apiService.createEvent(data);
       }
       if (!mounted) return;
-      
-      if (_isEditMode) {
-        NotificationService.showSuccess(context, '✅ Cập nhật sự kiện thành công!');
-      } else {
-        NotificationService.showSuccess(context, '🎉 Tạo sự kiện mới thành công!');
-      }
-      
-      // Chờ 1 giây để hiển thị thông báo trước khi quay lại
+
+      NotificationService.showSuccess(
+        context,
+        _isEditMode ? '✅ Cập nhật sự kiện thành công!' : '🎉 Tạo sự kiện mới thành công!',
+      );
+
       await Future.delayed(const Duration(seconds: 1));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = e.toString().replaceFirst("Exception: ", "");
-      NotificationService.showError(context, 'Đã xảy ra lỗi: $errorMessage');
+      NotificationService.showError(context, 'Đã xảy ra lỗi: ${e.toString().replaceFirst("Exception: ", "")}');
     } finally {
-      if (mounted) setState(() { _isLoading = false; });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Dán đoạn code này để thay thế cho @override Widget build(BuildContext context) cũ
-
   @override
   Widget build(BuildContext context) {
-    // Quay về cấu trúc Scaffold đơn giản ban đầu
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới'),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+    return MainLayout(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Giữ lại tất cả các trường nhập liệu, bao gồm cả dropdown
+              Text(
+                _isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Tên sự kiện'),
                 validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 16),
+
               TextFormField(
                 controller: _organizerController,
                 decoration: const InputDecoration(labelText: 'Đơn vị tổ chức (VD: Khoa CNTT)'),
                 validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 16),
-              // Dropdown chỉ hiển thị cho admin
+
               if (widget.role == 'admin')
                 _isOrganizersLoading
-                    ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
+                    ? const Center(child: CircularProgressIndicator())
                     : DropdownButtonFormField<int>(
                   value: _selectedOrganizerId,
                   decoration: const InputDecoration(
                     labelText: 'Gán cho người phụ trách',
                     border: OutlineInputBorder(),
                   ),
-                  items: _organizers.map((organizer) {
+                  items: _organizers.map((org) {
                     return DropdownMenuItem<int>(
-                      value: organizer['user_id'] as int,
-                      child: Text(organizer['email'].toString()),
+                      value: org['user_id'] as int,
+                      child: Text(org['email'].toString()),
                     );
                   }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedOrganizerId = value;
-                    });
-                  },
-                  validator: (value) => value == null ? 'Vui lòng chọn người phụ trách' : null,
+                  onChanged: (v) => setState(() => _selectedOrganizerId = v),
+                  validator: (v) => v == null ? 'Vui lòng chọn người phụ trách' : null,
                 ),
               if (widget.role == 'admin') const SizedBox(height: 16),
+
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
@@ -210,6 +206,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 24),
+
               Row(
                 children: [
                   Expanded(
@@ -217,7 +214,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                       onTap: () => _selectDate(context, true),
                       child: InputDecorator(
                         decoration: const InputDecoration(labelText: 'Ngày bắt đầu'),
-                        child: Text(_startDate == null ? 'Chọn ngày' : DateFormat('dd/MM/yyyy').format(_startDate!)),
+                        child: Text(_startDate == null
+                            ? 'Chọn ngày'
+                            : DateFormat('dd/MM/yyyy').format(_startDate!)),
                       ),
                     ),
                   ),
@@ -227,13 +226,16 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                       onTap: () => _selectDate(context, false),
                       child: InputDecorator(
                         decoration: const InputDecoration(labelText: 'Ngày kết thúc'),
-                        child: Text(_endDate == null ? 'Chọn ngày' : DateFormat('dd/MM/yyyy').format(_endDate!)),
+                        child: Text(_endDate == null
+                            ? 'Chọn ngày'
+                            : DateFormat('dd/MM/yyyy').format(_endDate!)),
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 32),
+
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(
@@ -241,9 +243,14 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: Text(_isEditMode ? 'CẬP NHẬT' : 'LƯU SỰ KIỆN', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text(
+                  _isEditMode ? 'CẬP NHẬT' : 'LƯU SỰ KIỆN',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ],
           ),

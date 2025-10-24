@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 
+import '../widgets/main_layout.dart';
+
 class DisplayQRScreen extends StatelessWidget {
   final int sessionId;
   final String sessionTitle;
@@ -15,13 +17,20 @@ class DisplayQRScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String qrData = jsonEncode({'session_id': sessionId});
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mã QR Check-in')),
-      body: Center(
+
+    return MainLayout(
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(sessionTitle, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              sessionTitle,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             QrImageView(
               data: qrData,
