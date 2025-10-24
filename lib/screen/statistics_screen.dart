@@ -190,16 +190,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             reservedSize: 100,
                             getTitlesWidget: (value, meta) {
                               final index = value.toInt();
-                              if (index >= sortedData.length)
-                                return const SizedBox.shrink();
+                              if (index >= sortedData.length) return const SizedBox.shrink();
                               final text = sortedData[index].key;
-                              return SideTitleWidget(
-                                axisSide: meta.axisSide,
-                                angle: -1.0,
-                                child: Text(
-                                  text,
-                                  style: const TextStyle(fontSize: 10),
-                                ),
+                              return Text(
+                                text,
+                                style: const TextStyle(fontSize: 10),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                textAlign: TextAlign.center,
                               );
                             },
                           ),
