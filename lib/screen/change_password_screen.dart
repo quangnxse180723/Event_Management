@@ -125,25 +125,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Giữ nguyên AppBar cũ bằng cách tạo thủ công (nút quay lại + tiêu đề)
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const Expanded(
-                child: Text(
-                  'Đổi mật khẩu',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 48), // để cân giữa tiêu đề
-            ],
-          ),
+      Row(
+      children: [
+      IconButton(
+      icon: const Icon(Icons.arrow_back, color: Colors.white),
+      onPressed: () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      },
+    ),
+    const SizedBox(width: 8),
+    const Text(
+    "Đổi mật khẩu",
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+    ),
+    ),
+    ],
+    ),
           const SizedBox(height: 16),
           Form(
             key: _formKey,
