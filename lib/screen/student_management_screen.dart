@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart'; // <-- Đã xóa import thừa
 import '../../domain/entities/Student.dart';
-// import '../services/app_user_service.dart'; // <-- Đã xóa import thừa
 import '../services/student_service.dart';
 import '../services/notification_service.dart';
 import 'package:file_picker/file_picker.dart';
@@ -22,6 +20,10 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   List<Student> students = [];
   bool isLoading = true;
 
+  // --- Biến màu chung cho dễ chỉnh ---
+  final Color primaryColor = Colors.green;
+  final Color primaryColorDark = Colors.green[800]!;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +39,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     });
   }
 
-  // --- HÀM _showStudentForm ĐÃ SỬA LỖI NGOẶC ---
+  // --- HÀM _showStudentForm ĐÃ "TÂN TRANG" LẠI GIAO DIỆN ---
   Future<void> _showStudentForm({Student? student}) async {
     final nameController = TextEditingController(text: student?.name ?? '');
     final codeController = TextEditingController(text: student?.studentCode ?? '');
@@ -49,33 +51,75 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     // Dùng context cục bộ
     final currentContext = context;
 
+    // --- HÀM TẠO DECORATION CHO TEXTFIELD CHO ĐỠ LẶP CODE ---
+    InputDecoration buildInputDecoration(String label, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: primaryColorDark),
+        filled: true,
+        fillColor: Colors.green[50]?.withAlpha(150),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none, // Bỏ viền
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryColor, width: 2), // Viền khi focus
+        ),
+      );
+    }
+    // --------------------------------------------------------
+
     await showDialog(
       context: currentContext,
       builder: (_) => AlertDialog(
-        title: Text(student == null ? "Thêm sinh viên" : "Cập nhật sinh viên"),
+        // --- LÀM ĐẸP DIALOG ---
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0)
+        ),
+        backgroundColor: Colors.grey[50], // Màu nền dialog
+        title: Center(
+          child: Text(
+            student == null ? "Thêm sinh viên" : "Cập nhật sinh viên",
+            style: TextStyle(fontWeight: FontWeight.bold, color: primaryColorDark),
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min, // Giúp Column co lại
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: "Tên", border: OutlineInputBorder())),
-              const SizedBox(height: 8),
-              TextField(controller: codeController, decoration: const InputDecoration(labelText: "Mã SV", border: OutlineInputBorder())),
-              const SizedBox(height: 8),
-              TextField(controller: phoneController, decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder())),
-              const SizedBox(height: 8),
-              TextField(controller: uniController, decoration: const InputDecoration(labelText: "University ID", border: OutlineInputBorder())),
+              TextField(controller: nameController, decoration: buildInputDecoration("Tên", Icons.person_outline)),
+              const SizedBox(height: 12), // Tăng khoảng cách
+              TextField(controller: codeController, decoration: buildInputDecoration("Mã SV", Icons.badge_outlined)),
+              const SizedBox(height: 12),
+              TextField(controller: phoneController, keyboardType: TextInputType.phone, decoration: buildInputDecoration("SĐT", Icons.phone_outlined)),
+              const SizedBox(height: 12),
+              TextField(controller: uniController, keyboardType: TextInputType.number, decoration: buildInputDecoration("University ID", Icons.school_outlined)),
               if (student == null) ...[
-                const SizedBox(height: 8),
-                TextField(controller: emailController, decoration: const InputDecoration(labelText: "Email", border: OutlineInputBorder())),
-                const SizedBox(height: 8),
-                TextField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: "Mật khẩu", border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: buildInputDecoration("Email", Icons.email_outlined)),
+                const SizedBox(height: 12),
+                TextField(controller: passwordController, obscureText: true, decoration: buildInputDecoration("Mật khẩu", Icons.lock_outline)),
               ],
             ],
           ),
         ),
-        actions: [ // <-- Cái 'actions' này phải nằm trong AlertDialog
-          TextButton(onPressed: () => Navigator.pop(currentContext), child: const Text("Hủy")),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        actions: [
+          // --- LÀM ĐẸP NÚT BẤM ---
+          TextButton(
+              onPressed: () => Navigator.pop(currentContext),
+              child: Text("HỦY", style: TextStyle(color: Colors.grey[700]))
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)
+            ),
             onPressed: () async {
               try {
                 if (student == null) {
@@ -122,11 +166,11 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                 }
               }
             },
-            child: const Text("Lưu"),
+            child: const Text("LƯU"),
           )
         ],
-      ), // <-- Dấu ) của AlertDialog
-    ); // <-- Dấu ); của showDialog
+      ),
+    );
   }
 
 
@@ -137,17 +181,28 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     final confirm = await showDialog<bool>(
       context: currentContext,
       builder: (_) => AlertDialog(
+        // --- LÀM ĐẸP DIALOG XÓA ---
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0)
+        ),
         title: const Text("Xác nhận xóa"),
         content: Text("Bạn có chắc muốn xóa sinh viên ${s.name}?"),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(currentContext, false),
-            child: const Text("Hủy"),
+            child: Text("HỦY", style: TextStyle(color: Colors.grey[700])),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(currentContext, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("Xóa"),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)
+                )
+            ),
+            child: const Text("XÓA"),
           ),
         ],
       ),
@@ -203,65 +258,52 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     }
   }
 
-  // --- XÓA HÀM _showStudentCredentials KHÔNG DÙNG ---
 
-
-  // --- HÀM BUILD ĐÃ CHUYỂN SANG DÙNG MAINLAYOUT ---
   @override
   Widget build(BuildContext context) {
-    // BỎ Scaffold đi
     return MainLayout(
-      // Truyền AppBar vào MainLayout
       appBar: AppBar(
-        // Làm cho AppBar trong suốt
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Đổi màu icon/chữ thành màu đen/xanh đậm cho dễ đọc trên nền sáng
-        foregroundColor: Colors.green[800],
+        foregroundColor: primaryColorDark,
         title: const Text("Quản lý Sinh viên"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.file_upload), // Màu tự động theo foregroundColor
+            icon: const Icon(Icons.file_upload),
             tooltip: "Import từ Excel",
             onPressed: _importStudents,
           ),
         ],
       ),
 
-      // Truyền FAB vào MainLayout
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showStudentForm(),
         tooltip: 'Thêm sinh viên',
-        backgroundColor: Colors.green[600], // Màu xanh lá cho FAB
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
 
-      // Đặt useScrollView = false vì mình dùng ListView
       useScrollView: false,
 
-      // Đây là nội dung (child)
       child: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
-        // Thêm padding trên để nó không bị dính vào AppBar
-        // và padding dưới để không bị FAB che
         padding: const EdgeInsets.only(top: 12.0, bottom: 90.0),
         itemCount: students.length,
         itemBuilder: (context, index) {
           final s = students[index];
           return Card(
-            // Card hơi mờ để thấy nền sóng
             color: Colors.white.withAlpha((255 * 0.9).round()),
             shadowColor: Colors.green[900]?.withAlpha((255 * 0.1).round()),
-            margin: const EdgeInsets.symmetric(vertical: 8), // Bỏ margin ngang (vì MainLayout đã có)
+            margin: const EdgeInsets.symmetric(vertical: 8),
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               leading: CircleAvatar(
                 backgroundColor: Colors.green[100],
-                foregroundColor: Colors.green[800],
+                foregroundColor: primaryColorDark,
                 child: Text(
                   s.name.isNotEmpty ? s.name[0].toUpperCase() : '?',
                   style: const TextStyle(fontWeight: FontWeight.bold),
