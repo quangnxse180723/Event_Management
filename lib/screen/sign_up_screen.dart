@@ -1,10 +1,13 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Cần cho CustomPainter
+// import 'dart:ui'; // <--- KHÔNG CẦN NỮA
 
 import '../services/auth_service.dart';
 import '../widgets/home_screen.dart';
 import '../services/notification_service.dart';
+
+// Import layout chung
+import '../widgets/main_layout.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -20,8 +23,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _loading = false;
   bool _obscureText = true;
 
+  // --- HÀM _handleSignUp GIỮ NGUYÊN ---
   Future<void> _handleSignUp() async {
-    // ... (Logic _handleSignUp giữ nguyên y hệt)
     setState(() => _loading = true);
     try {
       final user = await _authService.signUpStudent(
@@ -54,6 +57,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  // --- HÀM dispose GIỮ NGUYÊN ---
   @override
   void dispose() {
     _emailController.dispose();
@@ -61,296 +65,167 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  // --- PHƯƠNG THỨC BUILD ĐÃ GỌN LẠI ---
   @override
   Widget build(BuildContext context) {
     Color primaryColor = Colors.green;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      body: Stack(
+    // KHÔNG CẦN screenHeight, screenWidth
+    // KHÔNG CẦN Scaffold, Stack, Container, CustomPaint...
+
+    // Chỉ cần gọi MainLayout và truyền nội dung form vào
+    return MainLayout(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Lớp 1: Nền Gradient
-          Container(
-            height: double.infinity,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.green[100]!,
-                  Colors.green[50]!,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-
-          // Lớp 2: Sóng lượn TRÊN
-          CustomPaint(
-            size: Size(screenWidth, screenHeight * 0.4),
-            painter: WavyHeaderPainter(),
-          ),
-
-          // LỚP 2.5: SÓNG LƯỢN DƯỚI
+          // Nút Back
           Align(
-            alignment: Alignment.bottomCenter,
-            child: CustomPaint(
-              size: Size(screenWidth, screenHeight * 0.2),
-              painter: WavyFooterPainter(),
+            alignment: Alignment.topLeft,
+            child: BackButton(
+              color: Colors.green[800],
+              onPressed: () => Navigator.pop(context),
             ),
           ),
 
-          // Lớp 3: Nội dung (Form)
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nút Back
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: BackButton(
-                      color: Colors.green[800],
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
+          // Đẩy nội dung xuống
+          const SizedBox(height: 40),
 
-                  // Đẩy nội dung xuống
-                  const SizedBox(height: 40), // Giảm bớt khoảng cách ở đây
+          // Logo
+          Center(
+            child: Image.asset(
+              'assets/icon/logo_app.png',
+              width: 120,
+              height: 120,
+            ),
+          ),
+          const SizedBox(height: 30),
 
-                  // --- THÊM LOGO VÀO ĐÂY ---
-                  Center(
-                    child: Image.asset(
-                      'assets/icon/logo_app.png',
-                      width: 120,
-                      height: 120,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  // --- KẾT THÚC LOGO ---
-
-                  const Center(
-                    child: Text(
-                      "Đăng ký",
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Ô Email
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      labelText: "Email sinh viên",
-                      prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: primaryColor, width: 2)
-                      ),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Ô Mật khẩu
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscureText,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      labelText: "Mật khẩu",
-                      prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureText = !_obscureText;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: primaryColor, width: 2)
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Nút ĐĂNG KÝ
-                  _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _handleSignUp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        "ĐĂNG KÝ",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Nút Quay lại ĐĂNG NHẬP
-                  const Center(
-                    child: Text(
-                      "Đã có tài khoản?",
-                      style: TextStyle(color: Colors.black54, fontSize: 15),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: primaryColor),
-                        foregroundColor: primaryColor,
-                        backgroundColor: Colors.white.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        "ĐĂNG NHẬP",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+          const Center(
+            child: Text(
+              "Đăng ký",
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
           ),
+          const SizedBox(height: 30),
+
+          // Ô Email
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              labelText: "Email sinh viên",
+              prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: primaryColor, width: 2)
+              ),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 20),
+
+          // Ô Mật khẩu
+          TextFormField(
+            controller: _passwordController,
+            obscureText: _obscureText,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.white,
+              labelText: "Mật khẩu",
+              prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureText = !_obscureText;
+                  });
+                },
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: primaryColor, width: 2)
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+
+          // Nút ĐĂNG KÝ
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _handleSignUp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                "ĐĂNG KÝ",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+
+          // Nút Quay lại ĐĂNG NHẬP
+          const Center(
+            child: Text(
+              "Đã có tài khoản?",
+              style: TextStyle(color: Colors.black54, fontSize: 15),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: primaryColor),
+                foregroundColor: primaryColor,
+                backgroundColor: Colors.white.withOpacity(0.5),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                "ĐĂNG NHẬP",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 }
 
-
-// --- CLASS VẼ SÓNG TRÊN ---
-class WavyHeaderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint1 = Paint()
-      ..color = Colors.green[300]!
-      ..style = PaintingStyle.fill;
-
-    var path1 = Path();
-    path1.moveTo(0, size.height * 0.2);
-    path1.quadraticBezierTo(
-        size.width * 0.25, size.height * 0.4,
-        size.width * 0.5, size.height * 0.3);
-    path1.quadraticBezierTo(
-        size.width * 0.75, size.height * 0.2,
-        size.width, size.height * 0.25);
-    path1.lineTo(size.width, 0);
-    path1.lineTo(0, 0);
-    path1.close();
-    canvas.drawPath(path1, paint1);
-
-    var paint2 = Paint()
-      ..color = Colors.green[200]!
-      ..style = PaintingStyle.fill;
-
-    var path2 = Path();
-    path2.moveTo(0, size.height * 0.25);
-    path2.quadraticBezierTo(
-        size.width * 0.3, size.height * 0.5,
-        size.width * 0.55, size.height * 0.35);
-    path2.quadraticBezierTo(
-        size.width * 0.8, size.height * 0.2,
-        size.width, size.height * 0.3);
-    path2.lineTo(size.width, 0);
-    path2.lineTo(0, 0);
-    path2.close();
-    canvas.drawPath(path2, paint2);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-}
-
-// --- CLASS VẼ SÓNG DƯỚI ---
-class WavyFooterPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint1 = Paint()
-      ..color = Colors.green[300]!
-      ..style = PaintingStyle.fill;
-
-    var path1 = Path();
-    path1.moveTo(0, size.height * 0.8);
-    path1.quadraticBezierTo(
-        size.width * 0.25, size.height * 0.6,
-        size.width * 0.5, size.height * 0.7);
-    path1.quadraticBezierTo(
-        size.width * 0.75, size.height * 0.8,
-        size.width, size.height * 0.75);
-    path1.lineTo(size.width, size.height);
-    path1.lineTo(0, size.height);
-    path1.close();
-    canvas.drawPath(path1, paint1);
-
-    var paint2 = Paint()
-      ..color = Colors.green[200]!
-      ..style = PaintingStyle.fill;
-
-    var path2 = Path();
-    path2.moveTo(0, size.height * 0.75);
-    path2.quadraticBezierTo(
-        size.width * 0.3, size.height * 0.5,
-        size.width * 0.55, size.height * 0.65);
-    path2.quadraticBezierTo(
-        size.width * 0.8, size.height * 0.8,
-        size.width, size.height * 0.7);
-    path2.lineTo(size.width, size.height);
-    path2.lineTo(0, size.height);
-    path2.close();
-    canvas.drawPath(path2, paint2);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-}
