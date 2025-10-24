@@ -74,7 +74,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: SafeArea(
         child: Column(
           children: [
-            // ✅ AppBar tự custom giống màn hình “Sự kiện của tôi”
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
