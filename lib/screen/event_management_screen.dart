@@ -119,11 +119,23 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6FFF8), // Nền xanh lá nhạt
       appBar: AppBar(
-        title: const Text('Quản lý Sự kiện'),
+        elevation: 0,
+        backgroundColor: const Color(0xFF43A047), // Xanh lá đậm
+        title: const Text(
+          'Quản lý Sự kiện',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: 1.2,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Làm mới',
             onPressed: _refreshEvents,
           ),
         ],
@@ -132,14 +144,13 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
         future: _futureEvents,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF43A047)));
           }
           if (snapshot.hasError) {
-            // Hiển thị thông báo lỗi
             WidgetsBinding.instance.addPostFrameCallback((_) {
               NotificationService.showError(
                 context,
-                'Lỗi tải dữ liệu sự kiện: ${snapshot.error}',
+                'Lỗi tải dữ liệu sự kiện: \\${snapshot.error}',
               );
             });
             return Center(
@@ -150,42 +161,87 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                   children: [
                     const Icon(Icons.error_outline, size: 64, color: Colors.red),
                     const SizedBox(height: 16),
-                    Text('Lỗi tải dữ liệu: ${snapshot.error}', textAlign: TextAlign.center),
+                    Text('Lỗi tải dữ liệu: \\${snapshot.error}', textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    ElevatedButton(onPressed: _loadEvents, child: const Text('Thử lại'))
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF43A047),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _loadEvents,
+                      child: const Text('Thử lại'),
+                    )
                   ],
                 ),
               ),
             );
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Không có sự kiện nào.'));
+            return const Center(
+              child: Text(
+                'Không có sự kiện nào.',
+                style: TextStyle(
+                  color: Color(0xFF43A047),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                ),
+              ),
+            );
           }
 
           final events = snapshot.data!;
           return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(12.0),
             itemCount: events.length,
             itemBuilder: (context, index) {
               final event = events[index];
               return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                elevation: 3,
+                color: Colors.white,
+                elevation: 6,
+                shadowColor: const Color(0xFF43A047).withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(color: const Color(0xFF43A047).withOpacity(0.12), width: 1.2),
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
                 child: ListTile(
-                  title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(
-                      'Tổ chức bởi: ${event.organizer}\n'
-                          'Từ ${DateFormat('dd/MM/yyyy').format(event.startDate)} đến ${DateFormat('dd/MM/yyyy').format(event.endDate)}'),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFF43A047).withOpacity(0.15),
+                    child: const Icon(Icons.event, color: Color(0xFF43A047)),
+                  ),
+                  title: Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Color(0xFF1B5E20),
+                    ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 6.0),
+                    child: Text(
+                      'Tổ chức bởi: \\${event.organizer}\nTừ \\${DateFormat('dd/MM/yyyy').format(event.startDate)} đến \\${DateFormat('dd/MM/yyyy').format(event.endDate)}',
+                      style: const TextStyle(
+                        color: Color(0xFF388E3C),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: AppColors.primary),
-                        // SỬA: Gọi hàm điều hướng để sửa
+                        icon: const Icon(Icons.edit, color: Color(0xFF43A047)),
+                        tooltip: 'Sửa sự kiện',
                         onPressed: () => _navigateToCreateEditScreen(event: event),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        tooltip: 'Xóa sự kiện',
                         onPressed: () => _handleDelete(event),
                       ),
                     ],
@@ -198,11 +254,13 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
       ),
       floatingActionButton: (widget.role == 'admin' || widget.role == 'organizer')
           ? FloatingActionButton(
-        // SỬA: Gọi hàm điều hướng để tạo mới
-        onPressed: () => _navigateToCreateEditScreen(),
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
-      )
+              onPressed: () => _navigateToCreateEditScreen(),
+              backgroundColor: const Color(0xFF43A047),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 6,
+              child: const Icon(Icons.add, color: Colors.white, size: 32),
+              tooltip: 'Tạo sự kiện mới',
+            )
           : null,
     );
   }

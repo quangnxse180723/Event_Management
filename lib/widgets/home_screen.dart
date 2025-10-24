@@ -12,6 +12,8 @@ import '../screen/reporting_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/profile_screen.dart';
 import '../screen/my_event_screen.dart';
+
+import 'student_home_dynamic.dart';
 import '../screen/envent_list_screen.dart';
 
 
@@ -154,12 +156,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy theme cho gradient & text
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final cardTheme = Theme.of(context).cardTheme;
 
-    // Chọn menu theo role
+    if (widget.role == "student") {
+      // Giao diện đặc biệt cho sinh viên, lấy dữ liệu động từ Supabase
+  return StudentHomeDynamic(userId: widget.userId);
+    }
+
+    // Giao diện mặc định cho admin/organizer
     List<Map<String, dynamic>> features;
     if (widget.role == "admin") {
       features = _adminFeatures;
