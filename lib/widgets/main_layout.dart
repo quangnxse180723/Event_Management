@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
+import 'dart:ui'; // Cần cho CustomPainter
 
 ///
-/// Widget layout chung cho các màn hình
-/// có nền gradient và sóng lượn.
+/// Widget layout chung (BẢN NÂNG CẤP)
+/// Có thêm appBar, floatingActionButton và cho phép AppBar trong suốt
 ///
 class MainLayout extends StatelessWidget {
-  /// Nội dung chính của trang (ví dụ: form, danh sách...).
   final Widget child;
-
-  /// Quyết định xem có bọc nội dung trong SingleChildScrollView hay không.
-  /// Mặc định là true (có cuộn).
   final bool useScrollView;
+  final AppBar? appBar; // <--- THÊM CÁI NÀY
+  final Widget? floatingActionButton; // <--- THÊM CÁI NÀY
 
   const MainLayout({
     super.key,
     required this.child,
     this.useScrollView = true,
+    this.appBar, // <--- THÊM CÁI NÀY
+    this.floatingActionButton, // <--- THÊM CÁI NÀY
   });
 
   @override
@@ -25,6 +25,15 @@ class MainLayout extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      // Cho phép body nằm đè sau AppBar
+      extendBodyBehindAppBar: true,
+
+      // Dùng AppBar được truyền vào (nếu có)
+      appBar: appBar,
+
+      // Dùng FAB được truyền vào (nếu có)
+      floatingActionButton: floatingActionButton,
+
       body: Stack(
         children: [
           // Lớp 1: Nền Gradient
@@ -59,6 +68,7 @@ class MainLayout extends StatelessWidget {
           ),
 
           // Lớp 3: Nội dung (child)
+          // SafeArea sẽ tự động đẩy nội dung xuống dưới AppBar trong suốt
           SafeArea(
             child: useScrollView
                 ? SingleChildScrollView(
@@ -66,9 +76,9 @@ class MainLayout extends StatelessWidget {
                   horizontal: 24.0, vertical: 16.0),
               child: child,
             )
+            // Sửa padding cho ListView (ngang 16, dọc 0)
                 : Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: child,
             ),
           ),
@@ -79,7 +89,7 @@ class MainLayout extends StatelessWidget {
 }
 
 // --- CLASS VẼ SÓNG TRÊN ---
-// (Lấy từ LoginScreen của anh)
+// (Giữ nguyên)
 class WavyHeaderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -123,7 +133,7 @@ class WavyHeaderPainter extends CustomPainter {
 }
 
 // --- CLASS VẼ SÓNG DƯỚI ---
-// (Lấy từ LoginScreen của anh)
+// (Giữ nguyên)
 class WavyFooterPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -165,3 +175,4 @@ class WavyFooterPainter extends CustomPainter {
     return false;
   }
 }
+
