@@ -163,12 +163,14 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                   itemCount: students.length,
                   itemBuilder: (context, index) {
                     final student = students[index];
+                    // Debug log để kiểm tra dữ liệu
+                    // ignore: avoid_print
+                    print('Student: \\${student.toString()}');
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
-                          child: Text('${student.studentId}'),
+                          child: Text(student.studentId != null ? '${student.studentId}' : '?'),
                         ),
                         title: Text.rich(
                           TextSpan(
@@ -178,38 +180,35 @@ class _StudentInEventScreenState extends State<StudentInEventScreen> {
                                 style: TextStyle(fontWeight: FontWeight.bold),
                               ),
                               TextSpan(
-                                text: student.student?.studentCode ?? 'Null',
+                                text: student.student != null && student.student!.studentCode != null
+                                    ? student.student!.studentCode
+                                    : 'Null',
                               ),
                             ],
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          "Sự kiện: ${student.event?['title'] ?? 'Không có'}\n"
-                              "Trạng thái: ${student.status}",
+                          "Sự kiện: \\${student.event != null && student.event!['title'] != null ? student.event!['title'] : 'Không có'}\\n"
+                          "Trạng thái: \\${student.status ?? 'Không rõ'}",
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.check_circle,
-                                  color: Colors.green),
+                              icon: const Icon(Icons.check_circle, color: Colors.green),
                               tooltip: "Đánh dấu: Đã tham dự",
-                              onPressed: () =>
-                                  _handleMenuSelection("attended", student),
+                              onPressed: () => _handleMenuSelection("attended", student),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.cancel,
-                                  color: Colors.orange),
+                              icon: const Icon(Icons.cancel, color: Colors.orange),
                               tooltip: "Đánh dấu: Đã hủy",
-                              onPressed: () =>
-                                  _handleMenuSelection("cancelled", student),
+                              onPressed: () => _handleMenuSelection("cancelled", student),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               tooltip: "Xóa khỏi sự kiện",
-                              onPressed: () =>
-                                  _handleMenuSelection("delete", student),
+                              onPressed: () => _handleMenuSelection("delete", student),
                             ),
                           ],
                         ),
