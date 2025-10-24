@@ -143,7 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: const Icon(Icons.arrow_back),
                 onPressed: () {
                   if (Navigator.canPop(context)) Navigator.pop(context);
                 },
@@ -152,7 +152,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Text(
                 "Cài đặt",
                 style: TextStyle(
-                  color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
