@@ -20,6 +20,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
     _sessionsFuture = _fetchSessions();
   }
 
+  // 🔹 Lấy danh sách phiên từ Supabase
   Future<List<Map<String, dynamic>>> _fetchSessions() async {
     try {
       final response = await Supabase.instance.client
@@ -35,44 +36,51 @@ class _SessionListScreenState extends State<SessionListScreen> {
     }
   }
 
+  // 🔹 Hiển thị menu chọn hành động (QR / thủ công)
   void _showOptions(BuildContext context, Map<String, dynamic> session) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      backgroundColor: Colors.white,
       builder: (ctx) {
-        return Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.qr_code_2_rounded),
-              title: const Text('Hiển thị mã QR'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DisplayQRScreen(
-                      sessionId: session['session_id'],
-                      sessionTitle: session['title'] ?? 'Không có tiêu đề',
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.qr_code_2_rounded, color: Colors.blue),
+                title: const Text('Hiển thị mã QR'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DisplayQRScreen(
+                        sessionId: session['session_id'],
+                        sessionTitle: session['title'] ?? 'Không có tiêu đề',
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_note_rounded),
-              title: const Text('Điểm danh thủ công'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ManualCheckinScreen(
-                      sessionId: session['session_id'],
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_note_rounded, color: Colors.orange),
+                title: const Text('Điểm danh thủ công'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ManualCheckinScreen(
+                        sessionId: session['session_id'],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -81,8 +89,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      useScrollView: false,
-      // 🔹 AppBar custom: có nút back và tiêu đề
+      useScrollView: false, // 👈 Giữ đúng layout nền gradient
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -94,9 +101,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    }
+                    if (Navigator.canPop(context)) Navigator.pop(context);
                   },
                 ),
                 const SizedBox(width: 8),
@@ -112,7 +117,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             ),
           ),
 
-          // 🔹 Nội dung chính
+          // 🔹 Danh sách phiên
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _sessionsFuture,
@@ -121,7 +126,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Đã xảy ra lỗi: ${snapshot.error}'));
+                  return Center(
+                    child: Text(
+                      'Đã xảy ra lỗi: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(
@@ -144,12 +154,15 @@ class _SessionListScreenState extends State<SessionListScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
-                        leading: const Icon(Icons.access_time_filled_rounded),
+                        leading: const Icon(Icons.access_time_filled_rounded,
+                            color: Colors.blue),
                         title: Text(
                           session['title'] ?? 'Không có tiêu đề',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        subtitle: Text('Địa điểm: ${session['location'] ?? 'Chưa xác định'}'),
+                        subtitle: Text(
+                          'Địa điểm: ${session['location'] ?? 'Chưa xác định'}',
+                        ),
                         trailing: const Icon(Icons.more_vert),
                         onTap: () => _showOptions(context, session),
                       ),
