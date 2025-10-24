@@ -30,6 +30,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _fetchData();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _studentCodeController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchData() async {
     final supabase = Supabase.instance.client;
     try {
@@ -62,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       setState(() {
-        _studentId = data['student_id'] as int;
+        _studentId = data['student_id'] as int?;
         _nameController.text = data['name'] ?? '';
         _studentCodeController.text = data['student_code'] ?? '';
         _phoneController.text = data['phone'] ?? '';
@@ -71,33 +79,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
       NotificationService.showError(context, 'Lỗi tải dữ liệu: $e');
     }
   }
 
   Future<void> _saveProfile() async {
     final supabase = Supabase.instance.client;
-    try {
-      if (_universityId == null) {
-        NotificationService.showWarning(context, 'Bạn phải chọn trường đại học');
-        return;
-      }
 
+    final name = _nameController.text.trim();
+    final studentCode = _studentCodeController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.isEmpty || studentCode.isEmpty || phone.isEmpty) {
+      NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+    if (_universityId == null) {
+      NotificationService.showWarning(context, 'Bạn phải chọn trường đại học');
+      return;
+    }
+
+    try {
       if (_isNew) {
         // Insert mới
-        final inserted = await supabase.from('student').insert({
+        final inserted = await supabase
+            .from('student')
+            .insert({
           'user_id': widget.userId,
-          'name': _nameController.text.trim(),
-          'student_code': _studentCodeController.text.trim(),
-          'phone': _phoneController.text.trim(),
+          'name': name,
+          'student_code': studentCode,
+          'phone': phone,
           'university_id': _universityId,
-        }).select('student_id').single();
+        })
+            .select('student_id')
+            .single();
 
         setState(() {
-          _studentId = inserted['student_id'] as int;
+          _studentId = inserted['student_id'] as int?;
           _isNew = false;
           _editing = false;
         });
@@ -105,12 +124,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         NotificationService.showSuccess(context, '🎉 Tạo hồ sơ thành công!');
       } else {
         // Update theo student_id
-        final updated = await supabase.from('student').update({
-          'name': _nameController.text.trim(),
-          'student_code': _studentCodeController.text.trim(),
-          'phone': _phoneController.text.trim(),
+        final updated = await supabase
+            .from('student')
+            .update({
+          'name': name,
+          'student_code': studentCode,
+          'phone': phone,
           'university_id': _universityId,
-        }).eq('student_id', _studentId!).select('student_id');
+        })
+            .eq('student_id', _studentId!)
+            .select('student_id');
 
         if (updated.isEmpty) {
           NotificationService.showError(context, 'Không tìm thấy hồ sơ để cập nhật');
@@ -130,68 +153,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return MainLayout(
       useScrollView: true,
-      child: Column(
-        children: [
-          AppBar(
-            title: const Text("Thông tin cá nhân"),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-          ),
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Họ tên'),
-            readOnly: !_editing,
-          ),
-          TextField(
-            controller: _studentCodeController,
-            decoration: const InputDecoration(labelText: 'Mã sinh viên'),
-            readOnly: !_editing,
-          ),
-          TextField(
-            controller: _phoneController,
-            decoration: const InputDecoration(labelText: 'Số điện thoại'),
-            readOnly: !_editing,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<int>(
-            value: _universityId,
-            decoration: const InputDecoration(labelText: 'Trường đại học'),
-            items: _universities.map((uni) {
-              return DropdownMenuItem<int>(
-                value: uni['university_id'] as int,
-                child: Text(uni['name'] ?? ''),
-              );
-            }).toList(),
-            onChanged: _editing
-                ? (value) {
-              setState(() {
-                _universityId = value;
-              });
-            }
-                : null,
-          ),
-          const SizedBox(height: 20),
-
-          _editing
-              ? ElevatedButton(
-            onPressed: _saveProfile,
-            child: Text(_isNew ? 'Tạo hồ sơ' : 'Lưu'),
-          )
-              : ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _editing = true;
-              });
-            },
-            child: const Text("Sửa"),
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text(
+          "Thông tin cá nhân",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      floatingActionButton: !_editing
+          ? FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _editing = true;
+          });
+        },
+        child: const Icon(Icons.edit),
+      )
+          : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Họ tên'),
+              readOnly: !_editing,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _studentCodeController,
+              decoration: const InputDecoration(labelText: 'Mã sinh viên'),
+              readOnly: !_editing,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _phoneController,
+              decoration: const InputDecoration(labelText: 'Số điện thoại'),
+              keyboardType: TextInputType.phone,
+              readOnly: !_editing,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              value: _universityId,
+              decoration: const InputDecoration(labelText: 'Trường đại học'),
+              items: _universities.map((uni) {
+                return DropdownMenuItem<int>(
+                  value: uni['university_id'] as int,
+                  child: Text(uni['name'] ?? ''),
+                );
+              }).toList(),
+              onChanged: _editing
+                  ? (value) => setState(() => _universityId = value)
+                  : null,
+            ),
+            const SizedBox(height: 24),
+            if (_editing)
+              ElevatedButton.icon(
+                onPressed: _saveProfile,
+                icon: const Icon(Icons.save),
+                label: Text(_isNew ? 'Tạo hồ sơ' : 'Lưu thay đổi'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -58,7 +58,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   Future<void> _loadOrganizers() async {
     setState(() => _isOrganizersLoading = true);
     try {
-      final List<Map<String, dynamic>> data = await _apiService.fetchOrganizers();
+      final data = await _apiService.fetchOrganizers();
       setState(() {
         _organizers = data;
         if (_isEditMode && _selectedOrganizerId != null) {
@@ -114,9 +114,9 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       return;
     }
 
-    setState(() { _isLoading = true; });
+    setState(() => _isLoading = true);
 
-    final Map<String, dynamic> data = {
+    final data = {
       'title': _titleController.text,
       'description': _descriptionController.text,
       'organizer': _organizerController.text,
@@ -133,160 +133,128 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       }
       if (!mounted) return;
 
-      if (_isEditMode) {
-        NotificationService.showSuccess(context, '✅ Cập nhật sự kiện thành công!');
-      } else {
-        NotificationService.showSuccess(context, '🎉 Tạo sự kiện mới thành công!');
-      }
+      NotificationService.showSuccess(
+        context,
+        _isEditMode ? '✅ Cập nhật sự kiện thành công!' : '🎉 Tạo sự kiện mới thành công!',
+      );
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      final errorMessage = e.toString().replaceFirst("Exception: ", "");
-      NotificationService.showError(context, 'Đã xảy ra lỗi: $errorMessage');
+      NotificationService.showError(context, 'Đã xảy ra lỗi: ${e.toString().replaceFirst("Exception: ", "")}');
     } finally {
-      if (mounted) setState(() { _isLoading = false; });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Giữ nguyên nội dung cũ, chỉ bọc bằng MainLayout
     return MainLayout(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // AppBar thủ công để giữ style
-          Row(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
+              Text(
+                _isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              Expanded(
+              const SizedBox(height: 24),
+
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(labelText: 'Tên sự kiện'),
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _organizerController,
+                decoration: const InputDecoration(labelText: 'Đơn vị tổ chức (VD: Khoa CNTT)'),
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+
+              if (widget.role == 'admin')
+                _isOrganizersLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : DropdownButtonFormField<int>(
+                  value: _selectedOrganizerId,
+                  decoration: const InputDecoration(
+                    labelText: 'Gán cho người phụ trách',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _organizers.map((org) {
+                    return DropdownMenuItem<int>(
+                      value: org['user_id'] as int,
+                      child: Text(org['email'].toString()),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => _selectedOrganizerId = v),
+                  validator: (v) => v == null ? 'Vui lòng chọn người phụ trách' : null,
+                ),
+              if (widget.role == 'admin') const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
+                maxLines: 4,
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectDate(context, true),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Ngày bắt đầu'),
+                        child: Text(_startDate == null
+                            ? 'Chọn ngày'
+                            : DateFormat('dd/MM/yyyy').format(_startDate!)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectDate(context, false),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Ngày kết thúc'),
+                        child: Text(_endDate == null
+                            ? 'Chọn ngày'
+                            : DateFormat('dd/MM/yyyy').format(_endDate!)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                onPressed: _saveForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 child: Text(
-                  _isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  _isEditMode ? 'CẬP NHẬT' : 'LƯU SỰ KIỆN',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
-              const SizedBox(width: 48),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Toàn bộ Form y nguyên
-          Expanded(
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Tên sự kiện'),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _organizerController,
-                      decoration: const InputDecoration(labelText: 'Đơn vị tổ chức (VD: Khoa CNTT)'),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    if (widget.role == 'admin')
-                      _isOrganizersLoading
-                          ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                          : DropdownButtonFormField<int>(
-                        value: _selectedOrganizerId,
-                        decoration: const InputDecoration(
-                          labelText: 'Gán cho người phụ trách',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _organizers.map((organizer) {
-                          return DropdownMenuItem<int>(
-                            value: organizer['user_id'] as int,
-                            child: Text(organizer['email'].toString()),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedOrganizerId = value;
-                          });
-                        },
-                        validator: (value) => value == null
-                            ? 'Vui lòng chọn người phụ trách'
-                            : null,
-                      ),
-                    if (widget.role == 'admin') const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
-                      maxLines: 4,
-                      validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(context, true),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(labelText: 'Ngày bắt đầu'),
-                              child: Text(_startDate == null
-                                  ? 'Chọn ngày'
-                                  : DateFormat('dd/MM/yyyy').format(_startDate!)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _selectDate(context, false),
-                            child: InputDecorator(
-                              decoration: const InputDecoration(labelText: 'Ngày kết thúc'),
-                              child: Text(_endDate == null
-                                  ? 'Chọn ngày'
-                                  : DateFormat('dd/MM/yyyy').format(_endDate!)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                      onPressed: _saveForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        _isEditMode ? 'CẬP NHẬT' : 'LƯU SỰ KIỆN',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

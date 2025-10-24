@@ -61,68 +61,58 @@ class _CheckedInSessionsScreenState extends State<CheckedInSessionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Thay vì Scaffold, ta dùng MainLayout bọc toàn bộ nội dung
     return MainLayout(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Thay cho AppBar gốc
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const Expanded(
-                child: Text(
-                  "Các phiên đã điểm danh",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+      appBar: AppBar(
+        title: const Text("Các phiên đã điểm danh"),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      useScrollView: false, // Giúp ListView hoạt động tốt
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Lỗi: ${snapshot.error}'),
+            );
+          }
+
+          final sessions = snapshot.data ?? [];
+          if (sessions.isEmpty) {
+            return const Center(
+              child: Text('Bạn chưa điểm danh phiên nào.'),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: sessions.length,
+            itemBuilder: (context, i) {
+              final s = sessions[i];
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                child: ListTile(
+                  title: Text(
+                    s['title'],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Thời gian: ${s['start_time']} - Địa điểm: ${s['location']}\n'
+                        'Điểm danh lúc: ${s['checkin_time']}',
                   ),
                 ),
-              ),
-              const SizedBox(width: 48),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Giữ nguyên FutureBuilder cũ
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final sessions = snapshot.data!;
-                if (sessions.isEmpty) {
-                  return const Center(
-                      child: Text('Bạn chưa điểm danh phiên nào.'));
-                }
-
-                return ListView.builder(
-                  itemCount: sessions.length,
-                  itemBuilder: (context, i) {
-                    final s = sessions[i];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        title: Text(s['title']),
-                        subtitle: Text(
-                          'Thời gian: ${s['start_time']} - Địa điểm: ${s['location']}\n'
-                              'Điểm danh lúc: ${s['checkin_time']}',
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }

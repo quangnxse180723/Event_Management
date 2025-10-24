@@ -124,61 +124,49 @@ class _EventListScreenState extends State<EventListScreen> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      useScrollView: false, // ⚡ vì bên trong có ListView
-      child: Column(
-        children: [
-          // 🔹 AppBar giả lập (vì MainLayout đã có Scaffold)
-          Container(
-            height: kToolbarHeight,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.green.shade400.withOpacity(0.9),
+      useScrollView: false,
+      // ✅ Dùng AppBar thật, trong suốt
+      appBar: AppBar(
+        title: const Text("Danh sách sự kiện"),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+      ),
+
+      // ✅ Nội dung chính
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _events.isEmpty
+          ? const Center(child: Text("Không có sự kiện nào sắp diễn ra."))
+          : ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _events.length,
+        itemBuilder: (context, index) {
+          final ev = _events[index];
+          return Card(
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              "Danh sách sự kiện",
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              leading: const Icon(Icons.event_available, color: Colors.blueAccent),
+              title: Text(ev['title'] ?? 'Chưa có tiêu đề'),
+              subtitle: Text(
+                "Từ: ${_formatDate(ev['start_date'])} - Đến: ${_formatDate(ev['end_date'])}",
+              ),
+              trailing: ev['registered'] == true
+                  ? const Chip(
+                label: Text("Đã ĐK", style: TextStyle(color: Colors.white)),
+                backgroundColor: Colors.green,
+              )
+                  : ElevatedButton(
+                onPressed: () => _registerEvent(index, ev['event_id']),
+                child: const Text("Đăng ký"),
+              ),
             ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _events.isEmpty
-                ? const Center(child: Text("Không có sự kiện nào sắp diễn ra."))
-                : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _events.length,
-              itemBuilder: (context, index) {
-                final ev = _events[index];
-                return Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: const Icon(Icons.event_available, color: Colors.blueAccent),
-                    title: Text(ev['title'] ?? 'Chưa có tiêu đề'),
-                    subtitle: Text(
-                      "Từ: ${_formatDate(ev['start_date'])} - Đến: ${_formatDate(ev['end_date'])}",
-                    ),
-                    trailing: ev['registered'] == true
-                        ? const Chip(
-                      label: Text("Đã ĐK", style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.green,
-                    )
-                        : ElevatedButton(
-                      onPressed: () => _registerEvent(index, ev['event_id']),
-                      child: const Text("Đăng ký"),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

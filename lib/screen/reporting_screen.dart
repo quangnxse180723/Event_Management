@@ -8,8 +8,8 @@ import 'package:excel/excel.dart';
 import '../model/event_model.dart';
 import '../services/api_service.dart';
 import '../app_theme.dart';
-import '../widgets/main_layout.dart'; // 👈 THÊM DÒNG NÀY
-import 'statistics_screen.dart'; // Import màn hình thống kê
+import '../widgets/main_layout.dart';
+import 'statistics_screen.dart';
 
 class ReportingScreen extends StatefulWidget {
   final String role;
@@ -29,6 +29,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
 
+  // 📁 Lấy thư mục Download để lưu file
   Future<String> _getPublicDownloadsPath() async {
     if (Platform.isIOS) {
       final directory = await getApplicationDocumentsDirectory();
@@ -48,14 +49,14 @@ class _ReportingScreenState extends State<ReportingScreen> {
     throw Exception('Không tìm thấy thư mục lưu trữ ngoài.');
   }
 
+  // 📤 Xuất danh sách sinh viên theo sự kiện
   Future<void> _exportStudentsByEvent() async {
     final selectedEvent = await _showEventSelectionDialog();
-    if (selectedEvent == null || selectedEvent.id == null) {
-      return;
-    }
+    if (selectedEvent == null || selectedEvent.id == null) return;
 
     setState(() => _isLoading = true);
     if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Đang chuẩn bị xuất file... Vui lòng chờ.')),
     );
@@ -73,6 +74,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
         throw Exception('Sự kiện này chưa có sinh viên nào tham dự.');
       }
 
+      // 🔹 Tạo file Excel
       var excel = Excel.createExcel();
       Sheet sheet = excel[excel.getDefaultSheet()!];
 
@@ -103,7 +105,6 @@ class _ReportingScreenState extends State<ReportingScreen> {
       }
 
       final downloadsPath = await _getPublicDownloadsPath();
-
       final safeTitle = selectedEvent.title
           .replaceAll(RegExp(r'[^\w\s]+'), '')
           .replaceAll(' ', '_');
@@ -119,7 +120,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Xuất file thành công! Đã lưu tại: $filePath'),
+            content: Text('✅ Xuất file thành công! Đã lưu tại: $filePath'),
             duration: const Duration(seconds: 8),
           ),
         );
@@ -133,24 +134,20 @@ class _ReportingScreenState extends State<ReportingScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // 🔒 Xin quyền truy cập bộ nhớ
   Future<bool> _requestStoragePermission() async {
     if (Platform.isIOS) return true;
 
     final androidInfo = await DeviceInfoPlugin().androidInfo;
-    if (androidInfo.version.sdkInt >= 33) {
-      return true;
-    }
+    if (androidInfo.version.sdkInt >= 33) return true;
 
     var status = await Permission.storage.status;
-    if (status.isGranted) {
-      return true;
-    }
+    if (status.isGranted) return true;
+
     if (status.isPermanentlyDenied) {
       if (mounted) {
         showDialog(
@@ -158,15 +155,15 @@ class _ReportingScreenState extends State<ReportingScreen> {
           builder: (context) => AlertDialog(
             title: const Text('Cần quyền truy cập bộ nhớ'),
             content: const Text(
-                'Ứng dụng cần quyền để lưu file. Vui lòng vào cài đặt và cấp quyền truy cập bộ nhớ cho ứng dụng.'),
+                'Vui lòng vào cài đặt và cấp quyền truy cập bộ nhớ cho ứng dụng.'),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.pop(context),
                   child: const Text('Để sau')),
               TextButton(
                 onPressed: () {
                   openAppSettings();
-                  Navigator.of(context).pop();
+                  Navigator.pop(context);
                 },
                 child: const Text('Mở cài đặt'),
               ),
@@ -176,22 +173,28 @@ class _ReportingScreenState extends State<ReportingScreen> {
       }
       return false;
     }
+
     status = await Permission.storage.request();
     return status.isGranted;
   }
 
+  // 🗓️ Chọn sự kiện cần xuất
   Future<Event?> _showEventSelectionDialog() async {
     try {
       final events = await _apiService.fetchEvents(
         role: widget.role,
         userId: widget.userId,
       );
+
       if (!mounted) return null;
+
       if (events.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không có sự kiện nào để chọn.')));
+          const SnackBar(content: Text('Không có sự kiện nào để chọn.')),
+        );
         return null;
       }
+
       return showDialog<Event>(
         context: context,
         builder: (context) => AlertDialog(
@@ -205,7 +208,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 final event = events[index];
                 return ListTile(
                   title: Text(event.title),
-                  onTap: () => Navigator.of(context).pop(event),
+                  onTap: () => Navigator.pop(context, event),
                 );
               },
             ),
@@ -215,12 +218,14 @@ class _ReportingScreenState extends State<ReportingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi tải danh sách sự kiện: $e')));
+          SnackBar(content: Text('Lỗi tải danh sách sự kiện: $e')),
+        );
       }
       return null;
     }
   }
 
+  // 📊 Điều hướng sang màn hình thống kê
   void _navigateToStatistics(StatsType statsType) {
     Navigator.push(
       context,
@@ -230,59 +235,64 @@ class _ReportingScreenState extends State<ReportingScreen> {
     );
   }
 
+  // 🧱 UI
   @override
   Widget build(BuildContext context) {
-    return MainLayout( // 👈 Thêm layout gradient + sóng
+    return MainLayout(
       useScrollView: false,
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // 👈 Giữ nền trong suốt
-        appBar: AppBar(title: const Text('Báo cáo & Thống kê')),
-        body: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildReportCard(
-                  context,
-                  icon: Icons.download_for_offline,
-                  title: 'Xuất danh sách theo sự kiện',
-                  subtitle: 'Xuất file Excel danh sách sinh viên tham dự.',
-                  onTap: _isLoading ? null : _exportStudentsByEvent,
-                ),
-                const SizedBox(height: 16),
-                _buildReportCard(
-                  context,
-                  icon: Icons.school,
-                  title: 'Thống kê theo trường',
-                  subtitle: 'Xem biểu đồ số lượng sinh viên từ các trường/đơn vị.',
-                  onTap: () => _navigateToStatistics(StatsType.byUniversity),
-                ),
-                const SizedBox(height: 16),
-                _buildReportCard(
-                  context,
-                  icon: Icons.event,
-                  title: 'Thống kê theo sự kiện',
-                  subtitle: 'Xem biểu đồ số lượng sinh viên của mỗi sự kiện.',
-                  onTap: () => _navigateToStatistics(StatsType.byEvent),
-                ),
-                const SizedBox(height: 16),
-                _buildReportCard(
-                  context,
-                  icon: Icons.calendar_today,
-                  title: 'Thống kê theo ngày',
-                  subtitle:
-                  'Xem biểu đồ số lượng sinh viên tham gia theo ngày.',
-                  onTap: () => _navigateToStatistics(StatsType.byDate),
-                ),
-              ],
-            ),
-            if (_isLoading)
-              Container(
-                color: Colors.black.withOpacity(0.3),
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-          ],
+      appBar: AppBar(
+        title: const Text(
+          'Báo cáo & Thống kê',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      child: Stack(
+        children: [
+          ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              _buildReportCard(
+                context,
+                icon: Icons.download_for_offline,
+                title: 'Xuất danh sách theo sự kiện',
+                subtitle: 'Xuất file Excel danh sách sinh viên tham dự.',
+                onTap: _isLoading ? null : _exportStudentsByEvent,
+              ),
+              const SizedBox(height: 16),
+              _buildReportCard(
+                context,
+                icon: Icons.school,
+                title: 'Thống kê theo trường',
+                subtitle: 'Xem biểu đồ số lượng sinh viên từ các trường/đơn vị.',
+                onTap: () => _navigateToStatistics(StatsType.byUniversity),
+              ),
+              const SizedBox(height: 16),
+              _buildReportCard(
+                context,
+                icon: Icons.event,
+                title: 'Thống kê theo sự kiện',
+                subtitle: 'Xem biểu đồ số lượng sinh viên của mỗi sự kiện.',
+                onTap: () => _navigateToStatistics(StatsType.byEvent),
+              ),
+              const SizedBox(height: 16),
+              _buildReportCard(
+                context,
+                icon: Icons.calendar_today,
+                title: 'Thống kê theo ngày',
+                subtitle:
+                'Xem biểu đồ số lượng sinh viên tham gia theo ngày.',
+                onTap: () => _navigateToStatistics(StatsType.byDate),
+              ),
+            ],
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+        ],
       ),
     );
   }
@@ -295,16 +305,23 @@ class _ReportingScreenState extends State<ReportingScreen> {
         required VoidCallback? onTap,
       }) {
     final bool isEnabled = onTap != null;
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(icon,
-            size: 40, color: isEnabled ? AppColors.primary : Colors.grey),
-        title: Text(title,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isEnabled ? Colors.black87 : Colors.grey)),
+        leading: Icon(
+          icon,
+          size: 40,
+          color: isEnabled ? AppColors.primary : Colors.grey,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isEnabled ? Colors.black87 : Colors.grey,
+          ),
+        ),
         subtitle: Text(subtitle),
         onTap: onTap,
         enabled: isEnabled,

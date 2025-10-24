@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/main_layout.dart';
-
-// Giả sử bạn có AuthService để xử lý logic
 import '../services/auth_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -12,7 +10,7 @@ class ChangePasswordScreen extends StatefulWidget {
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
-// Enum để quản lý các bước trong màn hình
+// Enum quản lý các bước
 enum ChangePasswordStep {
   verifyCurrentPassword,
   enterNewPassword,
@@ -42,7 +40,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     super.dispose();
   }
 
-  // Hàm xử lý việc xác minh mật khẩu hiện tại
+  /// ✅ Xác minh mật khẩu hiện tại
   Future<void> _handleVerifyPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -61,7 +59,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           _currentStep = ChangePasswordStep.enterNewPassword;
         });
       }
-    } on AuthException catch (_) {
+    } on AuthException {
       setState(() {
         _errorMessage = "Mật khẩu hiện tại không chính xác.";
       });
@@ -70,15 +68,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _errorMessage = "Đã xảy ra lỗi không xác định. Vui lòng thử lại.";
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Hàm xử lý việc cập nhật mật khẩu mới
+  /// ✅ Cập nhật mật khẩu mới
   Future<void> _handleUpdatePassword() async {
     if (!_formKey.currentState!.validate()) return;
     if (_newPasswordController.text != _confirmPasswordController.text) {
@@ -109,54 +103,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         _errorMessage = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Thay vì Scaffold riêng, bọc nội dung bên trong MainLayout
     return MainLayout(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Giữ nguyên AppBar cũ bằng cách tạo thủ công (nút quay lại + tiêu đề)
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const Expanded(
-                child: Text(
-                  'Đổi mật khẩu',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 48), // để cân giữa tiêu đề
-            ],
-          ),
-          const SizedBox(height: 16),
-          Form(
-            key: _formKey,
-            child: _currentStep == ChangePasswordStep.verifyCurrentPassword
-                ? _buildVerifyStep()
-                : _buildNewPasswordStep(),
-          ),
-        ],
+      useScrollView: true,
+      appBar: AppBar(
+        title: const Text(
+          'Đổi mật khẩu',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: _currentStep == ChangePasswordStep.verifyCurrentPassword
+            ? _buildVerifyStep()
+            : _buildNewPasswordStep(),
       ),
     );
   }
 
-  // Widget cho bước xác minh mật khẩu hiện tại
+  // --- BƯỚC 1: XÁC MINH ---
   Widget _buildVerifyStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,11 +151,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             labelText: 'Mật khẩu hiện tại',
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
-              icon: Icon(_isCurrentPasswordVisible
-                  ? Icons.visibility_off
-                  : Icons.visibility),
-              onPressed: () => setState(
-                      () => _isCurrentPasswordVisible = !_isCurrentPasswordVisible),
+              icon: Icon(
+                _isCurrentPasswordVisible
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+              ),
+              onPressed: () => setState(() =>
+              _isCurrentPasswordVisible = !_isCurrentPasswordVisible),
             ),
           ),
           validator: (value) =>
@@ -186,13 +165,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
         const SizedBox(height: 24),
         if (_errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
+          Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+        const SizedBox(height: 8),
         _isLoading
             ? const Center(child: CircularProgressIndicator())
             : ElevatedButton(
@@ -206,7 +180,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 
-  // Widget cho bước nhập mật khẩu mới
+  // --- BƯỚC 2: ĐỔI MẬT KHẨU MỚI ---
   Widget _buildNewPasswordStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -248,8 +222,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               icon: Icon(_isConfirmPasswordVisible
                   ? Icons.visibility_off
                   : Icons.visibility),
-              onPressed: () => setState(
-                      () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+              onPressed: () => setState(() => _isConfirmPasswordVisible =
+              !_isConfirmPasswordVisible),
             ),
           ),
           validator: (value) {
@@ -262,13 +236,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
         const SizedBox(height: 24),
         if (_errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
+          Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+        const SizedBox(height: 8),
         _isLoading
             ? const Center(child: CircularProgressIndicator())
             : ElevatedButton(

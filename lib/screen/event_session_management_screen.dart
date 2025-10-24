@@ -7,7 +7,7 @@ import '../services/event_session_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'event_session_form_screen.dart';
-import '../widgets/main_layout.dart'; // ✅ dùng layout có sẵn
+import '../widgets/main_layout.dart'; // ✅ layout nền chung
 
 class EventSessionManagementScreen extends StatefulWidget {
   final int? eventId;
@@ -149,153 +149,142 @@ class _EventSessionManagementScreenState
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      useScrollView: false, // ✅ tránh lỗi infinite size
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // ✅ thấy nền gradient & sóng
-        appBar: AppBar(
-          title: const Text('Quản lý Phiên'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshSessions,
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            // --- Dropdown chọn sự kiện ---
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Chọn sự kiện:',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<Event>(
-                    value: selectedEvent,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: events.map((Event event) {
-                      return DropdownMenuItem<Event>(
-                        value: event,
-                        child: Text(
-                          event.title,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (Event? newValue) {
-                      setState(() => selectedEvent = newValue);
-                      _loadSessions();
-                    },
-                  ),
-                ],
+      useScrollView: false,
+      floatingActionButton:
+      (widget.role == 'admin' || widget.role == 'organizer')
+          ? FloatingActionButton(
+        onPressed: () => _navigateToCreateEdit(),
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add, color: Colors.white),
+      )
+          : null,
+      child: Column(
+        children: [
+          // ✅ Custom AppBar trong suốt của MainLayout
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
               ),
-            ),
+              const Expanded(
+                child: Text(
+                  'Quản lý Phiên',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _refreshSessions,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
-            // --- Danh sách phiên ---
-            Expanded(
-              child: _futureSessions == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : FutureBuilder<List<EventSession>>(
-                future: _futureSessions,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      NotificationService.showError(
-                          context, 'Lỗi tải dữ liệu: ${snapshot.error}');
-                    });
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+          // --- Dropdown chọn sự kiện ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Chọn sự kiện:',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<Event>(
+                  value: selectedEvent,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  items: events.map((Event event) {
+                    return DropdownMenuItem<Event>(
+                      value: event,
+                      child:
+                      Text(event.title, overflow: TextOverflow.ellipsis),
+                    );
+                  }).toList(),
+                  onChanged: (Event? newValue) {
+                    setState(() => selectedEvent = newValue);
+                    _loadSessions();
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // --- Danh sách phiên ---
+          Expanded(
+            child: _futureSessions == null
+                ? const Center(child: CircularProgressIndicator())
+                : FutureBuilder<List<EventSession>>(
+              future: _futureSessions,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    NotificationService.showError(
+                        context, 'Lỗi tải dữ liệu: ${snapshot.error}');
+                  });
+                  return const Center(
+                    child: Text('Đã xảy ra lỗi khi tải dữ liệu.'),
+                  );
+                } else if (!snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
+                  return const Center(child: Text('Chưa có phiên nào.'));
+                }
+
+                final sessions = snapshot.data!;
+                return ListView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: sessions.length,
+                  itemBuilder: (context, index) {
+                    final session = sessions[index];
+                    return Card(
+                      margin:
+                      const EdgeInsets.symmetric(vertical: 8.0),
+                      elevation: 3,
+                      child: ListTile(
+                        title: Text(session.title,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                          '${DateFormat('dd/MM/yyyy HH:mm').format(session.startTime)} - '
+                              '${DateFormat('dd/MM/yyyy HH:mm').format(session.endTime)}\n'
+                              'Địa điểm: ${session.location}',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline,
-                                size: 64, color: Colors.red),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Lỗi: ${snapshot.error}',
-                              textAlign: TextAlign.center,
+                            IconButton(
+                              icon: const Icon(Icons.edit,
+                                  color: Colors.green),
+                              onPressed: () => _navigateToCreateEdit(
+                                  session: session),
                             ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadSessions,
-                              child: const Text('Thử lại'),
+                            IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.redAccent),
+                              onPressed: () => _handleDelete(session),
                             ),
                           ],
                         ),
                       ),
                     );
-                  } else if (!snapshot.hasData ||
-                      snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text('Chưa có phiên nào.'),
-                    );
-                  }
-
-                  final sessions = snapshot.data!;
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(8.0),
-                    itemCount: sessions.length,
-                    itemBuilder: (context, index) {
-                      final session = sessions[index];
-                      return Card(
-                        margin:
-                        const EdgeInsets.symmetric(vertical: 8.0),
-                        elevation: 3,
-                        child: ListTile(
-                          title: Text(session.title,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                            '${DateFormat('dd/MM/yyyy HH:mm').format(session.startTime)} - '
-                                '${DateFormat('dd/MM/yyyy HH:mm').format(session.endTime)}\n'
-                                'Địa điểm: ${session.location}',
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit,
-                                    color: Colors.green),
-                                onPressed: () => _navigateToCreateEdit(
-                                    session: session),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent),
-                                onPressed: () => _handleDelete(session),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+                  },
+                );
+              },
             ),
-          ],
-        ),
-        floatingActionButton:
-        (widget.role == 'admin' || widget.role == 'organizer')
-            ? FloatingActionButton(
-          onPressed: () => _navigateToCreateEdit(),
-          backgroundColor: Colors.green,
-          child: const Icon(Icons.add, color: Colors.white),
-        )
-            : null,
+          ),
+        ],
       ),
     );
   }
