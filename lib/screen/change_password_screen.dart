@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/main_layout.dart';
 
-// Giả sử bạn có AuthService để xử lý logic, nếu chưa có, hãy tạo nó ở Bước 2
+// Giả sử bạn có AuthService để xử lý logic
 import '../services/auth_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -60,11 +61,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           _currentStep = ChangePasswordStep.enterNewPassword;
         });
       }
-    } on AuthException catch (e) {
+    } on AuthException catch (_) {
       setState(() {
         _errorMessage = "Mật khẩu hiện tại không chính xác.";
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _errorMessage = "Đã xảy ra lỗi không xác định. Vui lòng thử lại.";
       });
@@ -103,7 +104,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         );
         Navigator.of(context).pop();
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _errorMessage = "Đổi mật khẩu thất bại. Vui lòng thử lại.";
       });
@@ -118,18 +119,39 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Đổi mật khẩu'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: _currentStep == ChangePasswordStep.verifyCurrentPassword
-              ? _buildVerifyStep()
-              : _buildNewPasswordStep(),
-        ),
+    // ✅ Thay vì Scaffold riêng, bọc nội dung bên trong MainLayout
+    return MainLayout(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Giữ nguyên AppBar cũ bằng cách tạo thủ công (nút quay lại + tiêu đề)
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const Expanded(
+                child: Text(
+                  'Đổi mật khẩu',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48), // để cân giữa tiêu đề
+            ],
+          ),
+          const SizedBox(height: 16),
+          Form(
+            key: _formKey,
+            child: _currentStep == ChangePasswordStep.verifyCurrentPassword
+                ? _buildVerifyStep()
+                : _buildNewPasswordStep(),
+          ),
+        ],
       ),
     );
   }
@@ -149,20 +171,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           controller: _currentPasswordController,
           obscureText: !_isCurrentPasswordVisible,
           decoration: InputDecoration(
-              labelText: 'Mật khẩu hiện tại',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(_isCurrentPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _isCurrentPasswordVisible = !_isCurrentPasswordVisible),
-              )
+            labelText: 'Mật khẩu hiện tại',
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: Icon(_isCurrentPasswordVisible
+                  ? Icons.visibility_off
+                  : Icons.visibility),
+              onPressed: () => setState(
+                      () => _isCurrentPasswordVisible = !_isCurrentPasswordVisible),
+            ),
           ),
-          validator: (value) => (value == null || value.isEmpty) ? 'Không được để trống' : null,
+          validator: (value) =>
+          (value == null || value.isEmpty) ? 'Không được để trống' : null,
         ),
         const SizedBox(height: 24),
         if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -192,16 +221,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           controller: _newPasswordController,
           obscureText: !_isNewPasswordVisible,
           decoration: InputDecoration(
-              labelText: 'Mật khẩu mới',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(_isNewPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
-              )
+            labelText: 'Mật khẩu mới',
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: Icon(_isNewPasswordVisible
+                  ? Icons.visibility_off
+                  : Icons.visibility),
+              onPressed: () => setState(
+                      () => _isNewPasswordVisible = !_isNewPasswordVisible),
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) return 'Không được để trống';
-            if (value.length < 3) return 'Mật khẩu phải có ít nhất 6 ký tự';
+            if (value.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
             return null;
           },
         ),
@@ -210,16 +242,21 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           controller: _confirmPasswordController,
           obscureText: !_isConfirmPasswordVisible,
           decoration: InputDecoration(
-              labelText: 'Xác nhận mật khẩu mới',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(_isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-              )
+            labelText: 'Xác nhận mật khẩu mới',
+            border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: Icon(_isConfirmPasswordVisible
+                  ? Icons.visibility_off
+                  : Icons.visibility),
+              onPressed: () => setState(
+                      () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) return 'Không được để trống';
-            if (value != _newPasswordController.text) return 'Mật khẩu không khớp';
+            if (value != _newPasswordController.text) {
+              return 'Mật khẩu không khớp';
+            }
             return null;
           },
         ),
@@ -227,7 +264,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         _isLoading
             ? const Center(child: CircularProgressIndicator())

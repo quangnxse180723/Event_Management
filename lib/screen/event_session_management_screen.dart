@@ -7,6 +7,7 @@ import '../services/event_session_service.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'event_session_form_screen.dart';
+import '../widgets/main_layout.dart'; // ✅ dùng layout có sẵn
 
 class EventSessionManagementScreen extends StatefulWidget {
   final int? eventId;
@@ -21,12 +22,15 @@ class EventSessionManagementScreen extends StatefulWidget {
   });
 
   @override
-  State<EventSessionManagementScreen> createState() => _EventSessionManagementScreenState();
+  State<EventSessionManagementScreen> createState() =>
+      _EventSessionManagementScreenState();
 }
 
-class _EventSessionManagementScreenState extends State<EventSessionManagementScreen> {
+class _EventSessionManagementScreenState
+    extends State<EventSessionManagementScreen> {
   final EventSessionService sessionService = EventSessionService();
   final ApiService apiService = ApiService();
+
   Future<List<EventSession>>? _futureSessions;
   Event? selectedEvent;
   List<Event> events = [];
@@ -44,52 +48,39 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
 
   Future<void> _loadEvents() async {
     try {
-      // 1. Gọi API để lấy danh sách sự kiện
       events = await apiService.fetchEvents(
         role: widget.role,
         userId: widget.userId,
       );
 
-      // SỬA: Tách logic tìm kiếm để tránh lỗi kiểu dữ liệu
-      Event? foundEvent;
-      // Chỉ tìm khi danh sách không rỗng
       if (events.isNotEmpty) {
         if (widget.eventId != null) {
-          // Thử tìm event theo ID, nếu không thấy sẽ là null
-          try {
-            foundEvent = events.firstWhere((event) => event.id == widget.eventId);
-          } catch (e) {
-            foundEvent = null; // Không tìm thấy
-          }
+          selectedEvent = events.firstWhere(
+                (e) => e.id == widget.eventId,
+            orElse: () => events.first,
+          );
+        } else {
+          selectedEvent = events.first;
         }
-        // Nếu không tìm thấy event theo ID, hoặc không có ID để tìm, thì lấy event đầu tiên
-        selectedEvent = foundEvent ?? events.first;
       } else {
-        // Nếu danh sách rỗng, không có event nào được chọn
         selectedEvent = null;
       }
 
-
       if (mounted) setState(() {});
     } catch (e) {
-      print('Lỗi khi tải danh sách sự kiện: $e');
-      if (mounted) {
-        NotificationService.showError(context, 'Lỗi tải sự kiện: $e');
-      }
+      NotificationService.showError(context, 'Lỗi tải sự kiện: $e');
     }
   }
-
 
   void _loadSessions() {
     if (selectedEvent?.id != null) {
       setState(() {
-        _futureSessions = sessionService.fetchEventSessions(
-          eventId: selectedEvent!.id!, // Dùng ! vì đã kiểm tra null
-        );
+        _futureSessions =
+            sessionService.fetchEventSessions(eventId: selectedEvent!.id!);
       });
     } else {
       setState(() {
-        _futureSessions = Future.value(<EventSession>[]);
+        _futureSessions = Future.value([]);
       });
     }
   }
@@ -100,13 +91,12 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Xác nhận Xóa'),
-          content: Text('Bạn có chắc chắn muốn xóa phiên "${session.title}" không?'),
-          actions: <Widget>[
+          content:
+          Text('Bạn có chắc chắn muốn xóa phiên "${session.title}" không?'),
+          actions: [
             TextButton(
               child: const Text('Hủy'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
               child: const Text('Xóa', style: TextStyle(color: Colors.red)),
@@ -114,17 +104,14 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
                 Navigator.of(dialogContext).pop();
                 try {
                   await sessionService.deleteEventSession(session.sessionId);
-
                   if (mounted) {
-                    NotificationService.showSuccess(context, 'Đã xóa phiên "${session.title}" thành công!');
+                    NotificationService.showSuccess(
+                        context, 'Đã xóa phiên "${session.title}" thành công!');
                   }
-
                   _loadSessions();
-
                 } catch (e) {
-                  if (mounted) {
-                    NotificationService.showError(context, 'Lỗi khi xóa phiên: $e');
-                  }
+                  NotificationService.showError(
+                      context, 'Lỗi khi xóa phiên: $e');
                 }
               },
             ),
@@ -136,7 +123,8 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
 
   void _navigateToCreateEdit({EventSession? session}) async {
     if (selectedEvent == null) {
-      NotificationService.showWarning(context, 'Vui lòng chọn sự kiện trước khi tạo phiên');
+      NotificationService.showWarning(
+          context, 'Vui lòng chọn sự kiện trước khi tạo phiên');
       return;
     }
 
@@ -150,242 +138,164 @@ class _EventSessionManagementScreenState extends State<EventSessionManagementScr
       ),
     );
 
-    if (result == true) {
-      _loadSessions();
-    }
+    if (result == true) _loadSessions();
+  }
+
+  void _refreshSessions() {
+    _loadSessions();
+    NotificationService.showInfo(context, 'Đã làm mới danh sách phiên 🔄');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quản lý Phiên'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadSessions,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Dropdown chọn sự kiện
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Chọn sự kiện:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<Event>(
-                  value: selectedEvent,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return MainLayout(
+      useScrollView: false, // ✅ tránh lỗi infinite size
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // ✅ thấy nền gradient & sóng
+        appBar: AppBar(
+          title: const Text('Quản lý Phiên'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshSessions,
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // --- Dropdown chọn sự kiện ---
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chọn sự kiện:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  items: events.map((Event event) {
-                    return DropdownMenuItem<Event>(
-                      value: event,
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 200),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<Event>(
+                    value: selectedEvent,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: events.map((Event event) {
+                      return DropdownMenuItem<Event>(
+                        value: event,
                         child: Text(
                           event.title,
                           overflow: TextOverflow.ellipsis,
                         ),
+                      );
+                    }).toList(),
+                    onChanged: (Event? newValue) {
+                      setState(() => selectedEvent = newValue);
+                      _loadSessions();
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // --- Danh sách phiên ---
+            Expanded(
+              child: _futureSessions == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : FutureBuilder<List<EventSession>>(
+                future: _futureSessions,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      NotificationService.showError(
+                          context, 'Lỗi tải dữ liệu: ${snapshot.error}');
+                    });
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                size: 64, color: Colors.red),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Lỗi: ${snapshot.error}',
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadSessions,
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
+                        ),
                       ),
                     );
-                  }).toList(),
-                  onChanged: (Event? newValue) {
-                    setState(() {
-                      selectedEvent = newValue;
-                    });
-                    _loadSessions();
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Danh sách phiên
-          Expanded(
-            child: _futureSessions == null
-                ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Đang tải dữ liệu...'),
-                ],
-              ),
-            )
-                : selectedEvent == null
-                ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event_note, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'Vui lòng chọn sự kiện',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Chọn sự kiện từ dropdown ở trên',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-                : FutureBuilder<List<EventSession>>(
-              future: _futureSessions,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                else if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Lỗi: ${snapshot.error}',
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadSessions,
-                            child: const Text('Thử lại'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.schedule, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Chưa có phiên nào',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Nhấn nút + để tạo phiên mới',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                  } else if (!snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text('Chưa có phiên nào.'),
+                    );
+                  }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final session = snapshot.data![index];
-                    return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: InkWell(
-                        onTap: () => _navigateToCreateEdit(session: session),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  final sessions = snapshot.data!;
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    itemCount: sessions.length,
+                    itemBuilder: (context, index) {
+                      final session = sessions[index];
+                      return Card(
+                        margin:
+                        const EdgeInsets.symmetric(vertical: 8.0),
+                        elevation: 3,
+                        child: ListTile(
+                          title: Text(session.title,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                            '${DateFormat('dd/MM/yyyy HH:mm').format(session.startTime)} - '
+                                '${DateFormat('dd/MM/yyyy HH:mm').format(session.endTime)}\n'
+                                'Địa điểm: ${session.location}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      session.title,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'edit') {
-                                        _navigateToCreateEdit(session: session);
-                                      } else if (value == 'delete') {
-                                        _handleDelete(session);
-                                      }
-                                    },
-                                    itemBuilder: (BuildContext context) => [
-                                      const PopupMenuItem<String>(
-                                        value: 'edit',
-                                        child: ListTile(
-                                          leading: Icon(Icons.edit),
-                                          title: Text('Chỉnh sửa'),
-                                          contentPadding: EdgeInsets.zero,
-                                        ),
-                                      ),
-                                      const PopupMenuItem<String>(
-                                        value: 'delete',
-                                        child: ListTile(
-                                          leading: Icon(Icons.delete, color: Colors.red),
-                                          title: Text('Xóa', style: TextStyle(color: Colors.red)),
-                                          contentPadding: EdgeInsets.zero,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                              IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.green),
+                                onPressed: () => _navigateToCreateEdit(
+                                    session: session),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${DateFormat('dd/MM/yyyy HH:mm').format(session.startTime)} - '
-                                        '${DateFormat('dd/MM/yyyy HH:mm').format(session.endTime)}',
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      session.location,
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                  ),
-                                ],
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent),
+                                onPressed: () => _handleDelete(session),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToCreateEdit(),
-        child: const Icon(Icons.add),
+          ],
+        ),
+        floatingActionButton:
+        (widget.role == 'admin' || widget.role == 'organizer')
+            ? FloatingActionButton(
+          onPressed: () => _navigateToCreateEdit(),
+          backgroundColor: Colors.green,
+          child: const Icon(Icons.add, color: Colors.white),
+        )
+            : null,
       ),
     );
   }

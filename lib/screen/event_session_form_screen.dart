@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../model/event_session_model.dart';
 import '../services/event_session_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/main_layout.dart'; // 👈 thêm dòng import này
 
 class EventSessionFormScreen extends StatefulWidget {
   final EventSession? eventSession;
@@ -111,13 +112,11 @@ class _EventSessionFormScreenState extends State<EventSessionFormScreen> {
       );
 
       if (widget.eventSession == null) {
-        // Tạo mới
         await _sessionService.createEventSession(sessionToSave);
         if (mounted) {
           NotificationService.showSuccess(context, '🎉 Tạo phiên mới thành công!');
         }
       } else {
-        // Cập nhật
         await _sessionService.updateEventSession(sessionToSave);
         if (mounted) {
           NotificationService.showSuccess(context, '✅ Cập nhật phiên thành công!');
@@ -125,7 +124,6 @@ class _EventSessionFormScreenState extends State<EventSessionFormScreen> {
       }
 
       if (mounted) {
-        // Chờ 1 giây để hiển thị thông báo trước khi quay lại
         await Future.delayed(const Duration(seconds: 1));
         Navigator.of(context).pop(true);
       }
@@ -171,115 +169,109 @@ class _EventSessionFormScreenState extends State<EventSessionFormScreen> {
             ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // Tiêu đề phiên
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tiêu đề phiên',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.title),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Vui lòng nhập tiêu đề phiên';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Địa điểm
-                TextFormField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Địa điểm',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Vui lòng nhập địa điểm';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Thời gian bắt đầu
-                InkWell(
-                  onTap: () => _selectDateTime(context, true),
-                  child: InputDecorator(
+      body: MainLayout( // 👈 chỉ thêm dòng này
+        useScrollView: false,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
                     decoration: const InputDecoration(
-                      labelText: 'Thời gian bắt đầu',
+                      labelText: 'Tiêu đề phiên',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.access_time),
+                      prefixIcon: Icon(Icons.title),
                     ),
-                    child: Text(
-                      _startDateTime != null
-                          ? DateFormat('dd/MM/yyyy HH:mm').format(_startDateTime!)
-                          : 'Chọn thời gian bắt đầu',
-                      style: TextStyle(
-                        color: _startDateTime != null ? null : Colors.grey,
-                      ),
-                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập tiêu đề phiên';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // Thời gian kết thúc
-                InkWell(
-                  onTap: () => _selectDateTime(context, false),
-                  child: InputDecorator(
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _locationController,
                     decoration: const InputDecoration(
-                      labelText: 'Thời gian kết thúc',
+                      labelText: 'Địa điểm',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.access_time),
+                      prefixIcon: Icon(Icons.location_on),
                     ),
-                    child: Text(
-                      _endDateTime != null
-                          ? DateFormat('dd/MM/yyyy HH:mm').format(_endDateTime!)
-                          : 'Chọn thời gian kết thúc',
-                      style: TextStyle(
-                        color: _endDateTime != null ? null : Colors.grey,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập địa điểm';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => _selectDateTime(context, true),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Thời gian bắt đầu',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.access_time),
+                      ),
+                      child: Text(
+                        _startDateTime != null
+                            ? DateFormat('dd/MM/yyyy HH:mm').format(_startDateTime!)
+                            : 'Chọn thời gian bắt đầu',
+                        style: TextStyle(
+                          color: _startDateTime != null ? null : Colors.grey,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-
-                // Nút lưu
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _saveForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isLoading
-                      ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => _selectDateTime(context, false),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Thời gian kết thúc',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.access_time),
                       ),
-                      SizedBox(width: 8),
-                      Text('Đang lưu...'),
-                    ],
-                  )
-                      : Text(isEditing ? 'Cập nhật Phiên' : 'Tạo Phiên'),
-                ),
-              ],
+                      child: Text(
+                        _endDateTime != null
+                            ? DateFormat('dd/MM/yyyy HH:mm').format(_endDateTime!)
+                            : 'Chọn thời gian kết thúc',
+                        style: TextStyle(
+                          color: _endDateTime != null ? null : Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _saveForm,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: _isLoading
+                        ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Đang lưu...'),
+                      ],
+                    )
+                        : Text(isEditing ? 'Cập nhật Phiên' : 'Tạo Phiên'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ), // 👈 kết thúc MainLayout
     );
   }
 }
