@@ -53,6 +53,17 @@ class _MyEventScreenState extends State<MyEventScreen> {
     }
   }
 
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      // Chuyển chuỗi ISO (vd: 2025-10-31T00:00:00) sang DateTime
+      final date = DateTime.parse(dateStr);
+      // Hiển thị chỉ ngày/tháng/năm (bỏ giờ)
+      return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    } catch (e) {
+      return dateStr; // fallback nếu parse lỗi
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -116,6 +127,41 @@ class _MyEventScreenState extends State<MyEventScreen> {
                   final ev = _events[index];
                   final event = ev['event'];
 
+                  // ✅ Xử lý trạng thái tiếng Việt
+                  String trangThai = (ev['status'] ?? '').toString().toLowerCase();
+                  switch (trangThai) {
+                    case 'registered':
+                      trangThai = 'Đã đăng ký';
+                      break;
+                    case 'attended':
+                      trangThai = 'Đã tham gia';
+                      break;
+                    case 'completed':
+                      trangThai = 'Hoàn thành';
+                      break;
+                    case 'absent':
+                      trangThai = 'Vắng mặt';
+                      break;
+                    case 'pending':
+                      trangThai = 'Đang chờ xác nhận';
+                      break;
+                    default:
+                      trangThai = 'Không xác định';
+                  }
+
+                  // ✅ Màu nền chip
+                  Color chipColor;
+                  if (trangThai == 'Đã tham gia' || trangThai == 'Hoàn thành') {
+                    chipColor = Colors.green.shade100;
+                  } else if (trangThai == 'Đã đăng ký' ||
+                      trangThai == 'Đang chờ xác nhận') {
+                    chipColor = Colors.orange.shade100;
+                  } else if (trangThai == 'Vắng mặt') {
+                    chipColor = Colors.red.shade100;
+                  } else {
+                    chipColor = Colors.grey.shade200;
+                  }
+
                   return Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -129,13 +175,15 @@ class _MyEventScreenState extends State<MyEventScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        "Bắt đầu: ${event['start_date'] ?? ''}\nKết thúc: ${event['end_date'] ?? ''}",
+                        "Bắt đầu: ${_formatDate(event['start_date'])}   •   Kết thúc: ${_formatDate(event['end_date'])}",
+                        style: const TextStyle(height: 1.5),
                       ),
                       trailing: Chip(
-                        label: Text(ev['status'] ?? 'N/A'),
-                        backgroundColor: (ev['status'] == 'Hoàn thành')
-                            ? Colors.green.shade100
-                            : Colors.orange.shade100,
+                        label: Text(
+                          trangThai,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        backgroundColor: chipColor,
                       ),
                       onTap: () async {
                         if (_studentId == null) {
