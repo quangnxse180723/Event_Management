@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:student_attendance/screen/student_event_session_list_screen.dart';
+import '../widgets/main_layout.dart';
 import '../services/student_service.dart';
 import '../services/notification_service.dart';
 
@@ -48,58 +49,96 @@ class _MyEventScreenState extends State<MyEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Sự kiện của tôi")),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _events.isEmpty
-          ? const Center(
-        child: Text(
-          "Bạn chưa tham gia sự kiện nào.",
-          style: TextStyle(fontSize: 16),
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _events.length,
-        itemBuilder: (context, index) {
-          final ev = _events[index];
-          final event = ev['event'];
-          return Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return MainLayout(
+      useScrollView: true, // <--- dùng đúng property gốc
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Nút back + tiêu đề
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                "Sự kiện của tôi",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _events.isEmpty
+              ? const Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 100),
+              child: Text(
+                "Bạn chưa tham gia sự kiện nào.",
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
             ),
-            elevation: 3,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              leading: const Icon(Icons.event, color: Colors.blue),
-              title: Text(event['title'] ?? 'No title'),
-              subtitle: Text(
-                "Bắt đầu: ${event['start_date'] ?? ''}\nKết thúc: ${event['end_date'] ?? ''}",
-              ),
-              trailing: Chip(
-                label: Text(ev['status'] ?? 'N/A'),
-                backgroundColor: Colors.green.shade100,
-              ),
-              onTap: () async {
-                if (_studentId == null) {
-                  NotificationService.showError(context, "Không tìm thấy mã sinh viên.");
-                  return;
-                }
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => StudentEventSessionListScreen(
-                      eventId: event['event_id'],
-                      eventTitle: event['title'],
-                      studentId: _studentId!,
-                    ),
+          )
+              : ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _events.length,
+            itemBuilder: (context, index) {
+              final ev = _events[index];
+              final event = ev['event'];
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  leading:
+                  const Icon(Icons.event, color: Colors.blue),
+                  title: Text(event['title'] ?? 'No title'),
+                  subtitle: Text(
+                    "Bắt đầu: ${event['start_date'] ?? ''}\nKết thúc: ${event['end_date'] ?? ''}",
                   ),
-                );
-              },
-            ),
-          );
-        },
+                  trailing: Chip(
+                    label: Text(ev['status'] ?? 'N/A'),
+                    backgroundColor: Colors.green.shade100,
+                  ),
+                  onTap: () async {
+                    if (_studentId == null) {
+                      NotificationService.showError(
+                        context,
+                        "Không tìm thấy mã sinh viên.",
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => StudentEventSessionListScreen(
+                          eventId: event['event_id'],
+                          eventTitle: event['title'],
+                          studentId: _studentId!,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/main_layout.dart';
 import '../screen/login_screen.dart';
 import '../theme_provider.dart';
 import '../screen/change_password_screen.dart';
@@ -29,7 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await Supabase.instance.client.auth.signOut();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
+          (route) => false,
     );
   }
 
@@ -45,13 +46,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _handleLogout() async {
     try {
       NotificationService.showSuccess(context, "Đã đăng xuất thành công! Hẹn gặp lại bạn.");
-      
       await Future.delayed(const Duration(seconds: 1));
-      
       await supabase.auth.signOut();
-      if (mounted) {
-        _logout(context);
-      }
+      if (mounted) _logout(context);
     } catch (e) {
       if (mounted) {
         NotificationService.showError(context, "Lỗi khi đăng xuất: $e");
@@ -121,27 +118,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SỬA: Thêm hàm helper để lấy tên theme
   String _getCurrentThemeName(ThemeMode themeMode) {
     switch (themeMode) {
-      case ThemeMode.light: return 'Sáng';
-      case ThemeMode.dark: return 'Tối';
-      case ThemeMode.system: return 'Hệ thống';
+      case ThemeMode.light:
+        return 'Sáng';
+      case ThemeMode.dark:
+        return 'Tối';
+      case ThemeMode.system:
+        return 'Hệ thống';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUserEmail = supabase.auth.currentUser?.email ?? 'Không có thông tin';
-    // SỬA: Lắng nghe sự thay đổi của theme
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cài đặt'),
-      ),
-      body: ListView(
+    return MainLayout(
+      useScrollView: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 🟢 Header custom có icon quay lại + tiêu đề
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                },
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                "Cài đặt",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
           _buildSectionHeader('Tài khoản'),
           ListTile(
             leading: const Icon(Icons.email_outlined),
@@ -152,7 +172,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.lock_outline),
             title: const Text('Đổi mật khẩu'),
             onTap: () {
-              // SỬA Ở ĐÂY:
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
               );
@@ -160,23 +179,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ListTile(
             leading: Icon(Icons.logout, color: Colors.red.shade700),
-            title: Text(
-              'Đăng xuất',
-              style: TextStyle(color: Colors.red.shade700),
-            ),
-            // Khi người dùng nhấn vào, gọi hàm _handleLogout
-            onTap: () => _handleLogout(),
+            title: Text('Đăng xuất', style: TextStyle(color: Colors.red.shade700)),
+            onTap: _handleLogout,
           ),
           const Divider(height: 32),
 
-          // === SỬA NHÓM GIAO DIỆN ===
           _buildSectionHeader('Giao diện'),
           ListTile(
             leading: const Icon(Icons.brightness_6_outlined),
             title: const Text('Chế độ'),
-            // Sửa: Subtitle động theo theme hiện tại
             subtitle: Text(_getCurrentThemeName(themeProvider.themeMode)),
-            // Sửa: Gọi dialog khi nhấn vào
             onTap: _showThemeDialog,
           ),
 
@@ -204,7 +216,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          // SỬA: Lấy màu từ theme để tự động đổi màu Sáng/Tối
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
           fontSize: 14,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/main_layout.dart';
 import '../services/notification_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _phoneController = TextEditingController();
 
   int? _universityId;
-  int? _studentId; // 👈 khóa chính student_id để update chính xác
+  int? _studentId;
   bool _loading = true;
   bool _isNew = false;
   bool _editing = false;
@@ -38,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .select('university_id, name')
           .order('name');
 
-      // Lấy hồ sơ student theo user_id (lấy record mới nhất nếu có nhiều)
+      // Lấy hồ sơ student theo user_id
       final data = await supabase
           .from('student')
           .select('student_id, name, student_code, phone, university_id')
@@ -54,13 +55,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (data == null) {
         setState(() {
           _isNew = true;
-          _editing = true; // Hồ sơ mới thì bật nhập
+          _editing = true;
           _loading = false;
         });
         return;
       }
 
-      // Gán dữ liệu khi đã có hồ sơ
       setState(() {
         _studentId = data['student_id'] as int;
         _nameController.text = data['name'] ?? '';
@@ -94,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'student_code': _studentCodeController.text.trim(),
           'phone': _phoneController.text.trim(),
           'university_id': _universityId,
-        }).select('student_id').single(); // 👈 chỉ lấy student_id
+        }).select('student_id').single();
 
         setState(() {
           _studentId = inserted['student_id'] as int;
@@ -104,8 +104,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         NotificationService.showSuccess(context, '🎉 Tạo hồ sơ thành công!');
       } else {
-        print("👉 Updating student_id = $_studentId");
-
         // Update theo student_id
         final updated = await supabase.from('student').update({
           'name': _nameController.text.trim(),
@@ -113,8 +111,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'phone': _phoneController.text.trim(),
           'university_id': _universityId,
         }).eq('student_id', _studentId!).select('student_id');
-
-        print("✅ Update result: $updated");
 
         if (updated.isEmpty) {
           NotificationService.showError(context, 'Không tìm thấy hồ sơ để cập nhật');
@@ -135,63 +131,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    return Scaffold(
-      appBar: AppBar(title: const Text("Thông tin cá nhân")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Họ tên'),
-              readOnly: !_editing,
-            ),
-            TextField(
-              controller: _studentCodeController,
-              decoration: const InputDecoration(labelText: 'Mã sinh viên'),
-              readOnly: !_editing,
-            ),
-            TextField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Số điện thoại'),
-              readOnly: !_editing,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              value: _universityId,
-              decoration: const InputDecoration(labelText: 'Trường đại học'),
-              items: _universities.map((uni) {
-                return DropdownMenuItem<int>(
-                  value: uni['university_id'] as int,
-                  child: Text(uni['name'] ?? ''),
-                );
-              }).toList(),
-              onChanged: _editing
-                  ? (value) {
-                setState(() {
-                  _universityId = value;
-                });
-              }
-                  : null,
-            ),
-            const SizedBox(height: 20),
 
-            // Nút hành động
-            _editing
-                ? ElevatedButton(
-              onPressed: _saveProfile,
-              child: Text(_isNew ? 'Tạo hồ sơ' : 'Lưu'),
-            )
-                : ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _editing = true;
-                });
-              },
-              child: const Text("Sửa"),
-            ),
-          ],
-        ),
+    return MainLayout(
+      useScrollView: true,
+      child: Column(
+        children: [
+          AppBar(
+            title: const Text("Thông tin cá nhân"),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          const SizedBox(height: 16),
+
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Họ tên'),
+            readOnly: !_editing,
+          ),
+          TextField(
+            controller: _studentCodeController,
+            decoration: const InputDecoration(labelText: 'Mã sinh viên'),
+            readOnly: !_editing,
+          ),
+          TextField(
+            controller: _phoneController,
+            decoration: const InputDecoration(labelText: 'Số điện thoại'),
+            readOnly: !_editing,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            value: _universityId,
+            decoration: const InputDecoration(labelText: 'Trường đại học'),
+            items: _universities.map((uni) {
+              return DropdownMenuItem<int>(
+                value: uni['university_id'] as int,
+                child: Text(uni['name'] ?? ''),
+              );
+            }).toList(),
+            onChanged: _editing
+                ? (value) {
+              setState(() {
+                _universityId = value;
+              });
+            }
+                : null,
+          ),
+          const SizedBox(height: 20),
+
+          _editing
+              ? ElevatedButton(
+            onPressed: _saveProfile,
+            child: Text(_isNew ? 'Tạo hồ sơ' : 'Lưu'),
+          )
+              : ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _editing = true;
+              });
+            },
+            child: const Text("Sửa"),
+          ),
+        ],
       ),
     );
   }
