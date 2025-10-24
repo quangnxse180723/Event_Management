@@ -20,7 +20,6 @@ class _SessionListScreenState extends State<SessionListScreen> {
     _sessionsFuture = _fetchSessions();
   }
 
-  // 🔹 Lấy danh sách phiên từ Supabase
   Future<List<Map<String, dynamic>>> _fetchSessions() async {
     try {
       final response = await Supabase.instance.client
@@ -29,14 +28,15 @@ class _SessionListScreenState extends State<SessionListScreen> {
           .order('start_time', ascending: false);
       return response;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải danh sách phiên: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải danh sách phiên: $e')),
+        );
+      }
       rethrow;
     }
   }
 
-  // 🔹 Hiển thị menu chọn hành động (QR / thủ công)
   void _showOptions(BuildContext context, Map<String, dynamic> session) {
     showModalBottomSheet(
       context: context,
@@ -89,90 +89,89 @@ class _SessionListScreenState extends State<SessionListScreen> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      useScrollView: false, // 👈 Giữ đúng layout nền gradient
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 🔹 Thanh tiêu đề + back
-          Padding(
-            padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 16),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                  },
+      useScrollView: false,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.white,
+        onPressed: () => setState(() => _sessionsFuture = _fetchSessions()),
+        child: const Icon(Icons.refresh, color: Colors.blue),
+      ),
+      appBar: AppBar(
+        title: const Text(
+          "Chọn phiên để điểm danh",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          },
+        ),
+      ),
+
+      // 🔹 Nội dung chính
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _sessionsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.white));
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Đã xảy ra lỗi: ${snapshot.error}',
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text(
+                'Không có phiên nào được tìm thấy.',
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          final sessions = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: sessions.length,
+            itemBuilder: (context, index) {
+              final session = sessions[index];
+              return Card(
+                color: Colors.white.withOpacity(0.9),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  "Chọn phiên để điểm danh",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.access_time_filled_rounded,
+                    color: Colors.blue,
                   ),
+                  title: Text(
+                    session['title'] ?? 'Không có tiêu đề',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Địa điểm: ${session['location'] ?? 'Chưa xác định'}',
+                  ),
+                  trailing: const Icon(Icons.more_vert),
+                  onTap: () => _showOptions(context, session),
                 ),
-              ],
-            ),
-          ),
-
-          // 🔹 Danh sách phiên
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _sessionsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Đã xảy ra lỗi: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'Không có phiên nào được tìm thấy.',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  );
-                }
-
-                final sessions = snapshot.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: sessions.length,
-                  itemBuilder: (context, index) {
-                    final session = sessions[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.access_time_filled_rounded,
-                            color: Colors.blue),
-                        title: Text(
-                          session['title'] ?? 'Không có tiêu đề',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'Địa điểm: ${session['location'] ?? 'Chưa xác định'}',
-                        ),
-                        trailing: const Icon(Icons.more_vert),
-                        onTap: () => _showOptions(context, session),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+              );
+            },
+          );
+        },
       ),
     );
   }

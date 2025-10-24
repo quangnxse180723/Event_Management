@@ -24,65 +24,91 @@ class MainLayout extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      // Cho phép body nằm đè sau AppBar
-      extendBodyBehindAppBar: true,
+    // --- ANH BỌC CÁI SCAFFOLD BẰNG THEME NÀY ---
+    return Theme(
+      // Dùng Theme.of(context).copyWith để giữ lại style gốc
+      // và chỉ ghi đè những gì mình muốn (là cái appBarTheme)
+      data: Theme.of(context).copyWith(
+        appBarTheme: const AppBarTheme(
+          // --- CHỈNH MẶC ĐỊNH CHO APPBAR ---
+          backgroundColor: Colors.transparent, // Luôn trong suốt
+          elevation: 0, // Luôn không có bóng
 
-      // Dùng AppBar được truyền vào (nếu có)
-      appBar: appBar,
+          // Màu cho ICON (như nút back, nút import)
+          iconTheme: IconThemeData(color: Colors.black),
+          // Màu cho ACTIONS (như nút import)
+          actionsIconTheme: IconThemeData(color: Colors.black),
 
-      // Dùng FAB được truyền vào (nếu có)
-      floatingActionButton: floatingActionButton,
+          // Style cho TIÊU ĐỀ (chữ "Quản lý Sinh viên")
+          titleTextStyle: TextStyle(
+            color: Colors.black, // <-- Chữ màu đen
+            fontWeight: FontWeight.bold, // <-- Chữ đậm
+            fontSize: 20, // <-- Cỡ chữ 20 cho rõ
+          ),
+          // --- KẾT THÚC CHỈNH ---
+        ),
+      ),
+      child: Scaffold(
+        // Cho phép body nằm đè sau AppBar
+        extendBodyBehindAppBar: true,
 
-      body: Stack(
-        children: [
-          // Lớp 1: Nền Gradient
-          Container(
-            height: double.infinity,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.green[100]!,
-                  Colors.green[50]!,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+        // Dùng AppBar được truyền vào (nếu có)
+        // AppBar này sẽ tự động lấy style từ AppBarTheme ở trên
+        appBar: appBar,
+
+        // Dùng FAB được truyền vào (nếu có)
+        floatingActionButton: floatingActionButton,
+
+        body: Stack(
+          children: [
+            // Lớp 1: Nền Gradient
+            Container(
+              height: double.infinity,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.green[100]!,
+                    Colors.green[50]!,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
               ),
             ),
-          ),
 
-          // Lớp 2: Sóng trên
-          CustomPaint(
-            size: Size(screenWidth, screenHeight * 0.4),
-            painter: WavyHeaderPainter(),
-          ),
-
-          // Lớp 2.5: Sóng dưới
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: CustomPaint(
-              size: Size(screenWidth, screenHeight * 0.2),
-              painter: WavyFooterPainter(),
+            // Lớp 2: Sóng trên
+            CustomPaint(
+              size: Size(screenWidth, screenHeight * 0.4),
+              painter: WavyHeaderPainter(),
             ),
-          ),
 
-          // Lớp 3: Nội dung (child)
-          // SafeArea sẽ tự động đẩy nội dung xuống dưới AppBar trong suốt
-          SafeArea(
-            child: useScrollView
-                ? SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0, vertical: 16.0),
-              child: child,
-            )
-            // Sửa padding cho ListView (ngang 16, dọc 0)
-                : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: child,
+            // Lớp 2.5: Sóng dưới
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: CustomPaint(
+                size: Size(screenWidth, screenHeight * 0.2),
+                painter: WavyFooterPainter(),
+              ),
             ),
-          ),
-        ],
+
+            // Lớp 3: Nội dung (child)
+            // SafeArea sẽ tự động đẩy nội dung xuống dưới AppBar trong suốt
+            SafeArea(
+              child: useScrollView
+                  ? SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
+                child: child,
+              )
+              // Sửa padding cho ListView (ngang 16, dọc 0)
+                  : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: child,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

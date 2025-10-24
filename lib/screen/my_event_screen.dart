@@ -66,7 +66,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: const Icon(Icons.arrow_back),
                   onPressed: () {
                     if (Navigator.canPop(context)) Navigator.pop(context);
                   },
@@ -75,14 +75,13 @@ class _MyEventScreenState extends State<MyEventScreen> {
                 const Text(
                   "Sự kiện của tôi",
                   style: TextStyle(
-                    color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  icon: const Icon(Icons.refresh),
                   tooltip: 'Làm mới',
                   onPressed: () {
                     _loadEvents();
@@ -104,7 +103,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
                   padding: EdgeInsets.only(top: 100),
                   child: Text(
                     "Bạn chưa tham gia sự kiện nào.",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    style: TextStyle(fontSize: 16),
                   ),
                 ),
               )

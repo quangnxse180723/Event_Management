@@ -170,7 +170,6 @@ class _EventSessionManagementScreenState
               const Expanded(
                 child: Text(
                   'Quản lý Phiên',
-                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

@@ -243,7 +243,6 @@ class _ReportingScreenState extends State<ReportingScreen> {
       appBar: AppBar(
         title: const Text(
           'Báo cáo & Thống kê',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
