@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import '../services/notification_service.dart';
 import 'create_edit_event_screen.dart';
 import '../widgets/main_layout.dart';
+import 'event_session_management_screen.dart'; // Thêm import
 
 class EventManagementScreen extends StatefulWidget {
   final String role;
@@ -117,12 +118,39 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
           ),
         ],
       ),
+      // ** ĐÃ THAY ĐỔI: Thêm Row chứa 2 nút **
       floatingActionButton: (widget.role == 'admin' || widget.role == 'organizer')
-          ? FloatingActionButton(
-        onPressed: () => _navigateToCreateEditScreen(),
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
-      )
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Nút "Phiên sự kiện"
+                FloatingActionButton.extended(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EventSessionManagementScreen(
+                          role: widget.role,
+                          userId: widget.userId,
+                        ),
+                      ),
+                    );
+                  },
+                  heroTag: 'sessionFab', // Tránh xung đột Hero tag
+                  icon: const Icon(Icons.access_time, color: Colors.white),
+                  label: const Text('Phiên', style: TextStyle(color: Colors.white)),
+                  backgroundColor: Colors.blueAccent,
+                ),
+                const SizedBox(width: 16),
+                // Nút "Thêm sự kiện" (giữ nguyên)
+                FloatingActionButton(
+                  onPressed: () => _navigateToCreateEditScreen(),
+                  heroTag: 'eventFab', // Tránh xung đột Hero tag
+                  backgroundColor: AppColors.accent,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              ],
+            )
           : null,
       child: FutureBuilder<List<Event>>(
         future: _futureEvents,

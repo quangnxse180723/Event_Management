@@ -10,6 +10,8 @@ class MainLayout extends StatelessWidget {
   final bool useScrollView;
   final AppBar? appBar; // <--- THÊM CÁI NÀY
   final Widget? floatingActionButton; // <--- THÊM CÁI NÀY
+  // --- THÊM THUỘC TÍNH NÀY ---
+  final Widget? bottomNavigationBar;
 
   const MainLayout({
     super.key,
@@ -17,6 +19,8 @@ class MainLayout extends StatelessWidget {
     this.useScrollView = true,
     this.appBar, // <--- THÊM CÁI NÀY
     this.floatingActionButton, // <--- THÊM CÁI NÀY
+    // --- THÊM VÀO CONSTRUCTOR ---
+    this.bottomNavigationBar,
   });
 
   @override
@@ -58,6 +62,8 @@ class MainLayout extends StatelessWidget {
 
         // Dùng FAB được truyền vào (nếu có)
         floatingActionButton: floatingActionButton,
+        // --- SỬ DỤNG THUỘC TÍNH MỚI Ở ĐÂY ---
+        bottomNavigationBar: bottomNavigationBar,
 
         body: Stack(
           children: [

@@ -48,7 +48,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, "Đăng ký thất bại: ${e.toString()}");
+        NotificationService.showError(context, "Email hoặc mật khẩu không hợp lệ, vui lòng thử lại!");
       }
     } finally {
       if (mounted) {

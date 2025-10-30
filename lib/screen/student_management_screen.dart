@@ -162,7 +162,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
               } catch (e) {
                 print('❌ Lỗi bị bắt ở UI: $e');
                 if (mounted) {
-                  NotificationService.showError(currentContext, '❌ Lỗi: $e');
+                  NotificationService.showError(currentContext, ' Lỗi: $e');
                 }
               }
             },

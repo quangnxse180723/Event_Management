@@ -25,10 +25,10 @@ class UniversityService {
       await supabase
           .from('university')
           .update({
-        'name': university.name,
-        'address': university.address,
-        'contact_info': university.contactInfo,
-      })
+            'name': university.name,
+            'address': university.address,
+            'contact_info': university.contactInfo,
+          })
           .eq('university_id', university.universityId!);
     } catch (e) {
       throw Exception("Update failed: $e");
@@ -37,9 +37,23 @@ class UniversityService {
 
   Future<void> deleteUniversity(int id) async {
     try {
-      await supabase.from('university').delete().eq('university_id', id);
+      // Thêm .select() để lấy về danh sách các bản ghi đã bị xóa.
+      final deletedData = await supabase
+          .from('university')
+          .delete()
+          .eq('university_id', id)
+          .select();
+
+      // Nếu không có bản ghi nào được trả về, có nghĩa là việc xóa không thành công.
+      // Nguyên nhân phổ biến là do chính sách Row Level Security (RLS) của Supabase
+      // không cho phép người dùng hiện tại thực hiện hành động xóa.
+      if (deletedData.isEmpty) {
+        throw Exception(
+            "Không có mục nào được xóa. Vui lòng kiểm tra quyền truy cập hoặc ID của mục.");
+      }
     } catch (e) {
-      throw Exception("Delete failed: $e");
+      // Ném lại ngoại lệ để lớp UI có thể bắt và hiển thị thông báo.
+      throw Exception("Xóa thất bại: $e");
     }
   }
 

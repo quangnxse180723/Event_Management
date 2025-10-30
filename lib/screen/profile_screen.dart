@@ -204,11 +204,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               value: _universityId,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Trường đại học'),
               items: _universities.map((uni) {
                 return DropdownMenuItem<int>(
                   value: uni['university_id'] as int,
-                  child: Text(uni['name'] ?? ''),
+                  child: Text(
+                    uni['name'] ?? '',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 );
               }).toList(),
               onChanged: _editing

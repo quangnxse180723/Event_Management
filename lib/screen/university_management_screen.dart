@@ -109,8 +109,45 @@ class _UniversityScreenState extends State<UniversityScreen> {
   }
 
   Future<void> _deleteUniversity(int id) async {
-    await UniversityService().deleteUniversity(id);
-    _loadData();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Xác nhận xóa"),
+        content: const Text("Bạn có chắc chắn muốn xóa trường này không?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Hủy"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Xóa"),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await UniversityService().deleteUniversity(id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Xóa trường thành công!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _loadData();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Lỗi khi xóa trường: $e"),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   // Thay phần build của UniversityScreen
@@ -160,10 +197,11 @@ class _UniversityScreenState extends State<UniversityScreen> {
                     icon: Icon(Icons.edit, color: Colors.blue),
                     onPressed: () => _showForm(uni: uni),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteUniversity(uni.universityId!),
-                  ),
+                  if (uni.universityId != null)
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteUniversity(uni.universityId!),
+                    ),
                 ],
               ),
             ),

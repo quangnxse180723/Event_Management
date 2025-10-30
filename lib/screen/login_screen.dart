@@ -1,13 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-// import 'dart:ui'; // <--- KHÔNG CẦN NỮA, vì layout đã lo việc này
 
 import '../services/auth_service.dart';
 import '../widgets/home_screen.dart';
 import '../screen/sign_up_screen.dart';
 import '../services/notification_service.dart';
-
-// Import layout chung của mình
 import '../widgets/main_layout.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,7 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _obscureText = true;
 
-  // --- HÀM _handleLogin GIỮ NGUYÊN ---
   Future<void> _handleLogin() async {
     setState(() => _loading = true);
     try {
@@ -36,20 +32,37 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         NotificationService.showSuccess(context, "Đăng nhập thành công! Chào mừng bạn đến với hệ thống.");
         await Future.delayed(const Duration(seconds: 1));
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                HomeScreen(
-                  role: user['role'],
-                  userId: user['id'],
-                ),
-          ),
-        );
+
+        // ====== LOGIC ĐIỀU HƯỚNG THEO VAI TRÒ (ĐÃ SỬA) ======
+        final userRole = user['role'];
+        final userId = user['id']; // Lấy userId
+
+        if (userRole == 'admin') {
+          // Nếu là admin, điều hướng và gửi kèm tham số
+          Navigator.pushReplacementNamed(
+            context,
+            '/admin_home',
+            arguments: {
+              'role': userRole,
+              'userId': userId,
+            },
+          );
+        } else {
+          // Các vai trò khác giữ nguyên
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                role: userRole,
+                userId: userId,
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, "Đăng nhập thất bại: ${e.toString()}");
+        NotificationService.showError(context, "Email hoặc mật khẩu không đúng! Vui lòng thử lại.");
       }
     } finally {
       if (mounted) {
@@ -58,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- HÀM dispose GIỮ NGUYÊN ---
   @override
   void dispose() {
     _emailController.dispose();
@@ -66,22 +78,15 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // --- PHƯƠNG THỨC BUILD ĐÃ GỌN LẠI ---
   @override
   Widget build(BuildContext context) {
     Color primaryColor = Colors.green;
 
-    // KHÔNG CẦN screenHeight, screenWidth
-    // KHÔNG CẦN Scaffold, Stack, Container, CustomPaint...
-
-    // Chỉ cần gọi MainLayout và truyền nội dung form vào
     return MainLayout(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Đẩy Logo xuống dưới sóng
           const SizedBox(height: 140),
-
           Center(
             child: Image.asset(
               'assets/icon/logo_app.png',
@@ -90,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 30),
-
           const Center(
             child: Text(
               "Đăng nhập",
@@ -102,8 +106,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 30),
-
-          // Ô Email
           TextFormField(
             controller: _emailController,
             decoration: InputDecoration(
@@ -123,8 +125,6 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 20),
-
-          // Ô Mật khẩu
           TextFormField(
             controller: _passwordController,
             obscureText: _obscureText,
@@ -154,8 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 40),
-
-          // Nút ĐĂNG NHẬP
           _loading
               ? const Center(child: CircularProgressIndicator())
               : SizedBox(
@@ -180,8 +178,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 30),
-
-          // Nút ĐĂNG KÝ
           const Center(
             child: Text(
               "Chưa có tài khoản?",
@@ -216,10 +212,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 40), // Thêm khoảng đệm ở dưới
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 }
-
