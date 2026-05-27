@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- THÊM IMPORT SUPABASE
 import '../../domain/entities/Student.dart';
 import '../services/student_service.dart';
 import '../services/notification_service.dart';
@@ -20,6 +21,11 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   List<Student> students = [];
   bool isLoading = true;
 
+  // thêm map để chọn trường
+  List<Map<String, dynamic>> _universities = [];
+  bool _isUniversitiesLoading = true;
+  // ------------------------------------
+
   // --- Biến màu chung cho dễ chỉnh ---
   final Color primaryColor = Colors.green;
   final Color primaryColorDark = Colors.green[800]!;
@@ -28,6 +34,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   void initState() {
     super.initState();
     _loadStudents();
+    _loadUniversities(); // <-- TẢI DANH SÁCH TRƯỜNG
   }
 
   Future<void> _loadStudents() async {
@@ -39,12 +46,34 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     });
   }
 
-  // --- HÀM _showStudentForm ĐÃ "TÂN TRANG" LẠI GIAO DIỆN ---
+  // --- HÀM MỚI (LẤY TRỰC TIẾP TỪ SUPABASE) ---
+  Future<void> _loadUniversities() async {
+    setState(() => _isUniversitiesLoading = true);
+    final supabase = Supabase.instance.client;
+    try {
+      final universityList = await supabase
+          .from('university')
+          .select('university_id, name')
+          .order('name');
+      setState(() {
+        _universities = List<Map<String, dynamic>>.from(universityList);
+        _isUniversitiesLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isUniversitiesLoading = false);
+      if (mounted) {
+        NotificationService.showError(
+            context, 'Lỗi tải danh sách trường: $e');
+      }
+    }
+  }
+  // ----------------------------------------
+
+  // --- HÀM _showStudentForm ĐÃ "TÂN TRANG" VÀ SỬA LOGIC ---
   Future<void> _showStudentForm({Student? student}) async {
     final nameController = TextEditingController(text: student?.name ?? '');
     final codeController = TextEditingController(text: student?.studentCode ?? '');
     final phoneController = TextEditingController(text: student?.phone ?? '');
-    final uniController = TextEditingController(text: student?.universityId?.toString() ?? '');
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
 
@@ -72,107 +101,166 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
 
     await showDialog(
       context: currentContext,
-      builder: (_) => AlertDialog(
-        // --- LÀM ĐẸP DIALOG ---
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0)
-        ),
-        backgroundColor: Colors.grey[50], // Màu nền dialog
-        title: Center(
-          child: Text(
-            student == null ? "Thêm sinh viên" : "Cập nhật sinh viên",
-            style: TextStyle(fontWeight: FontWeight.bold, color: primaryColorDark),
-          ),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: buildInputDecoration("Tên", Icons.person_outline)),
-              const SizedBox(height: 12), // Tăng khoảng cách
-              TextField(controller: codeController, decoration: buildInputDecoration("Mã SV", Icons.badge_outlined)),
-              const SizedBox(height: 12),
-              TextField(controller: phoneController, keyboardType: TextInputType.phone, decoration: buildInputDecoration("SĐT", Icons.phone_outlined)),
-              const SizedBox(height: 12),
-              TextField(controller: uniController, keyboardType: TextInputType.number, decoration: buildInputDecoration("University ID", Icons.school_outlined)),
-              if (student == null) ...[
-                const SizedBox(height: 12),
-                TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: buildInputDecoration("Email", Icons.email_outlined)),
-                const SizedBox(height: 12),
-                TextField(controller: passwordController, obscureText: true, decoration: buildInputDecoration("Mật khẩu", Icons.lock_outline)),
-              ],
-            ],
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        actions: [
-          // --- LÀM ĐẸP NÚT BẤM ---
-          TextButton(
-              onPressed: () => Navigator.pop(currentContext),
-              child: Text("HỦY", style: TextStyle(color: Colors.grey[700]))
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)
+      builder: (_) {
+        // --- DÙNG STATEFULBUILDER ĐỂ CẬP NHẬT DROPDOWN TRONG DIALOG ---
+        int? _dialogSelectedUniversityId = student?.universityId;
+
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            // --- LÀM ĐẸP DIALOG ---
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0)),
+            backgroundColor: Colors.grey[50], // Màu nền dialog
+            title: Center(
+              child: Text(
+                student == null ? "Thêm sinh viên" : "Cập nhật sinh viên",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: primaryColorDark),
+              ),
             ),
-            onPressed: () async {
-              try {
-                if (student == null) {
-                  final newStudent = Student.createForInsert(
-                    name: nameController.text,
-                    studentCode: codeController.text,
-                    phone: phoneController.text,
-                    universityId: int.tryParse(uniController.text),
-                    createdAt: DateTime.now(),
-                  );
-                  await _studentService.addStudent(
-                    newStudent,
-                    emailController.text.trim(),
-                    passwordController.text.trim(),
-                  );
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                      controller: nameController,
+                      decoration:
+                      buildInputDecoration("Tên", Icons.person_outline)),
+                  const SizedBox(height: 12), // Tăng khoảng cách
+                  TextField(
+                      controller: codeController,
+                      decoration:
+                      buildInputDecoration("Mã SV", Icons.badge_outlined)),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration:
+                      buildInputDecoration("SĐT", Icons.phone_outlined)),
+                  const SizedBox(height: 12),
 
-                  if (!mounted) return;
-                  NotificationService.showSuccess(currentContext, 'Thêm sinh viên thành công!');
+                  // --- THAY BẰNG DROPDOWN  ---
+                  _isUniversitiesLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : DropdownButtonFormField<int>(
+                    value: _dialogSelectedUniversityId,
+                    decoration: buildInputDecoration(
+                        "Trường Đại học", Icons.school_outlined),
+                    items: _universities.map((uni) { // <-- Dùng List<Map>
+                      return DropdownMenuItem<int>(
+                        value: uni['university_id'] as int, // <-- Lấy từ Map
+                        child: Text(uni['name'] ?? '', // <-- Lấy từ Map
+                            overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        _dialogSelectedUniversityId = value;
+                      });
+                    },
+                    validator: (value) =>
+                    value == null ? 'Vui lòng chọn trường' : null,
+                    isExpanded: true, // Cho phép tên dài
+                  ),
+                  // ----------------------------------------
 
-                } else {
-                  final updatedStudent = Student(
-                    studentId: student.studentId,
-                    name: nameController.text,
-                    studentCode: codeController.text,
-                    phone: phoneController.text,
-                    universityId: int.tryParse(uniController.text),
-                    userId: student.userId,
-                    createdAt: student.createdAt,
-                  );
-                  await _studentService.updateStudent(updatedStudent);
+                  if (student == null) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: buildInputDecoration(
+                            "Email", Icons.email_outlined)),
+                    const SizedBox(height: 12),
+                    TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: buildInputDecoration(
+                            "Mật khẩu", Icons.lock_outline)),
+                  ],
+                ],
+              ),
+            ),
+            actionsPadding:
+            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            actions: [
+              // --- LÀM ĐẸP NÚT BẤM ---
+              TextButton(
+                  onPressed: () => Navigator.pop(currentContext),
+                  child: Text("HỦY", style: TextStyle(color: Colors.grey[700]))),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12)),
+                onPressed: () async {
 
-                  if (!mounted) return;
-                  NotificationService.showSuccess(currentContext, 'Cập nhật thành công!');
-                }
+                  // --- KIỂM TRA ĐÃ CHỌN TRƯỜNG CHƯA ---
+                  if (_dialogSelectedUniversityId == null) {
+                    NotificationService.showError(
+                        currentContext, 'Vui lòng chọn trường đại học.');
+                    return; // Dừng lại nếu chưa chọn
+                  }
+                  // ------------------------------------
 
-                if (!mounted) return;
-                Navigator.pop(currentContext);
-                _loadStudents();
+                  try {
+                    if (student == null) {
+                      final newStudent = Student.createForInsert(
+                        name: nameController.text,
+                        studentCode: codeController.text,
+                        phone: phoneController.text,
+                        universityId: _dialogSelectedUniversityId, // <-- LẤY ID TỪ DROPDOWN
+                        createdAt: DateTime.now(),
+                      );
+                      await _studentService.addStudent(
+                        newStudent,
+                        emailController.text.trim(),
+                        passwordController.text.trim(),
+                      );
 
-              } catch (e) {
-                print('❌ Lỗi bị bắt ở UI: $e');
-                if (mounted) {
-                  NotificationService.showError(currentContext, ' Lỗi: $e');
-                }
-              }
-            },
-            child: const Text("LƯU"),
-          )
-        ],
-      ),
+                      if (!mounted) return;
+                      NotificationService.showSuccess(
+                          currentContext, 'Thêm sinh viên thành công!');
+                    } else {
+                      final updatedStudent = Student(
+                        studentId: student.studentId,
+                        name: nameController.text,
+                        studentCode: codeController.text,
+                        phone: phoneController.text,
+                        universityId: _dialogSelectedUniversityId, // <-- LẤY ID TỪ DROPDOWN
+                        userId: student.userId,
+                        createdAt: student.createdAt,
+                      );
+                      await _studentService.updateStudent(updatedStudent);
+
+                      if (!mounted) return;
+                      NotificationService.showSuccess(
+                          currentContext, 'Cập nhật thành công!');
+                    }
+
+                    if (!mounted) return;
+                    Navigator.pop(currentContext);
+                    _loadStudents(); // Tải lại danh sách sinh viên
+                    // Không cần tải lại danh sách trường
+                  } catch (e) {
+                    print('❌ Lỗi bị bắt ở UI: $e');
+                    if (mounted) {
+                      NotificationService.showError(
+                          currentContext, '❌ Lỗi: $e');
+                    }
+                  }
+                },
+                child: const Text("LƯU"),
+              )
+            ],
+          );
+        });
+      },
     );
   }
-
 
   Future<void> _deleteStudent(Student s) async {
     // Dùng context cục bộ
@@ -182,12 +270,12 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
       context: currentContext,
       builder: (_) => AlertDialog(
         // --- LÀM ĐẸP DIALOG XÓA ---
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0)
-        ),
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
         title: const Text("Xác nhận xóa"),
         content: Text("Bạn có chắc muốn xóa sinh viên ${s.name}?"),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        actionsPadding:
+        const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(currentContext, false),
@@ -199,9 +287,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)
-                )
-            ),
+                    borderRadius: BorderRadius.circular(10))),
             child: const Text("XÓA"),
           ),
         ],
@@ -247,7 +333,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
 
       if (!mounted) return;
       Navigator.pop(currentContext); // tắt loading
-      NotificationService.showSuccess(currentContext, '✅ Import sinh viên từ Excel thành công!');
+      NotificationService.showSuccess(
+          currentContext, '✅ Import sinh viên từ Excel thành công!');
       _loadStudents(); // refresh danh sách
 
     } catch (e) {
@@ -258,14 +345,28 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     }
   }
 
+  // --- HÀM MỚI ĐỂ LẤY TÊN TRƯỜNG TỪ MAP ---
+  String _getUniversityName(int? universityId) {
+    if (universityId == null) return "Chưa cập nhật";
+    if (_isUniversitiesLoading) return "Đang tải...";
+    try {
+      // Tìm tên trường trong danh sách Map đã tải
+      final uni = _universities.firstWhere(
+              (map) => map['university_id'] == universityId);
+      return uni['name'] ?? 'ID không xác định';
+    } catch (e) {
+      // Nếu không tìm thấy (ví dụ: dữ liệu cũ)
+      return "ID không xác định: $universityId";
+    }
+  }
+  // -------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return MainLayout(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: primaryColorDark,
+        // Style của AppBar sẽ tự động lấy từ MainLayout
+        // (chữ đen, đậm, nền trong suốt)
         title: const Text("Quản lý Sinh viên"),
         actions: [
           IconButton(
@@ -275,7 +376,6 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showStudentForm(),
         tooltip: 'Thêm sinh viên',
@@ -283,9 +383,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
-
       useScrollView: false,
-
       child: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -295,12 +393,15 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
           final s = students[index];
           return Card(
             color: Colors.white.withAlpha((255 * 0.9).round()),
-            shadowColor: Colors.green[900]?.withAlpha((255 * 0.1).round()),
+            shadowColor:
+            Colors.green[900]?.withAlpha((255 * 0.1).round()),
             margin: const EdgeInsets.symmetric(vertical: 8),
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              contentPadding: const EdgeInsets.symmetric(
+                  vertical: 8.0, horizontal: 16.0),
               leading: CircleAvatar(
                 backgroundColor: Colors.green[100],
                 foregroundColor: primaryColorDark,
@@ -311,7 +412,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
               ),
               title: Text(
                 s.name,
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.bold),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +421,11 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                   const SizedBox(height: 4),
                   Text("Mã SV: ${s.studentCode}"),
                   if (s.phone.isNotEmpty) Text("SĐT: ${s.phone}"),
-                  if (s.universityId != null) Text("University ID: ${s.universityId}"),
+
+                  // --- HIỂN THỊ TÊN TRƯỜNG ---
+                  Text("Trường: ${_getUniversityName(s.universityId)}"),
+                  // --------------------------
+
                   if (s.userId != null) Text("User ID: ${s.userId}"),
                 ],
               ),
@@ -344,4 +450,3 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     );
   }
 }
-

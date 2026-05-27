@@ -7,6 +7,7 @@ import '../screen/event_session_management_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/profile_screen.dart';
 import '../screen/my_event_screen.dart';
+import 'organizer_home_screen.dart';
 import 'student_home_dynamic.dart';
 import '../screen/envent_list_screen.dart';
 
@@ -116,6 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (widget.role == "student") {
       // Giao diện đặc biệt cho sinh viên
       return StudentHomeDynamic(userId: widget.userId);
+    } else if (widget.role == "organizer") {
+      return OrganizerHomeScreen(role: widget.role, userId: widget.userId);
     }
 
     // Giao diện GridView mặc định cho các role còn lại (organizer)

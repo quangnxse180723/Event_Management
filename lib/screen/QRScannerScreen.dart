@@ -14,6 +14,7 @@ class QRScannerScreen extends StatefulWidget {
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isProcessing = false;
+  final MobileScannerController _controller = MobileScannerController();
 
   Future<Map<String, int>> _getStudentInfo() async {
     final authId = Supabase.instance.client.auth.currentUser?.id;
@@ -92,6 +93,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MainLayout(
       useScrollView: false,
@@ -108,6 +115,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         children: [
           // Camera Scanner
           MobileScanner(
+            controller: _controller,
             onDetect: (barcodeCapture) {
               final barcode = barcodeCapture.barcodes.first;
               if (barcode.rawValue != null && !_isProcessing) {
