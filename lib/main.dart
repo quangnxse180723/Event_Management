@@ -14,8 +14,8 @@ Future<void> main() async {
   await initializeDateFormatting('vi_VN', null);
 
   await Supabase.initialize(
-    url: 'https://vxxjfbvboktsxqccqrqf.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eGpmYnZib2t0c3hxY2NxcnFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxNzgyODYsImV4cCI6MjA3Mzc1NDI4Nn0.B-2UN9d9V9pzU0Zft4WavBVfk2X6SZje2Xuw8Z6D_Oo',
+    url: 'https://qegseyeqojeeuvkdtzxx.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlZ3NleWVxb2plZXV2a2R0enh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjY4OTAsImV4cCI6MjA5NDk0Mjg5MH0.3AUDhkm9ayuOj1FujviUgL6GkhOLa65-tRHEtljdYUU',
   );
 
   runApp(
