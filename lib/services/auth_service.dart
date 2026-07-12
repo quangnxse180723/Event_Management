@@ -1,51 +1,45 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../domain/entities/app_user.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
-  /// lấy thông tin người dùng bằng email
+
   Future<AppUser?> getUserByEmail(String email) async {
     final data = await _supabase
         .from('app_user')
         .select()
         .eq('email', email)
         .maybeSingle();
-
-    if (data == null) return null;
-    return AppUser.fromJson(Map<String, dynamic>.from(data));
+    return data == null
+        ? null
+        : AppUser.fromJson(Map<String, dynamic>.from(data));
   }
-  /// Đăng nhập với email & password
+
   Future<Map<String, dynamic>> signIn(String email, String password) async {
-    // 1. Gọi Supabase auth
     final response = await _supabase.auth.signInWithPassword(
       email: email,
       password: password,
     );
-
-    if (response.user == null) {
-      throw Exception("Đăng nhập thất bại. Kiểm tra lại email/mật khẩu.");
+    final authUser = response.user;
+    if (authUser == null) {
+      throw Exception('Dang nhap that bai. Kiem tra lai email va mat khau.');
     }
 
-    final userId = response.user!.id;
-
-    // 2. Truy vấn bảng `app_user` để lấy user_id và role
     final userData = await _supabase
         .from('app_user')
         .select('user_id, role')
-        .eq('auth_id', userId)
-        .single();
-
+        .eq('auth_id', authUser.id)
+        .maybeSingle();
     if (userData == null) {
-      throw Exception("Không tìm thấy thông tin người dùng trong hệ thống.");
+      throw Exception('Khong tim thay profile nguoi dung trong he thong.');
     }
 
-    // 3. (Optional) Lấy name từ bảng student nếu có
     final studentData = await _supabase
         .from('student')
         .select('name')
         .eq('user_id', userData['user_id'])
         .maybeSingle();
-
     return {
       'id': userData['user_id'],
       'role': userData['role'],
@@ -53,100 +47,137 @@ class AuthService {
     };
   }
 
-  /// Đăng ký tài khoản sinh viên (Sign Up)
-  Future<Map<String, dynamic>> signUpStudent(String email, String password) async {
-    // 1. Tạo tài khoản trên Supabase Auth
-    final response = await _supabase.auth.signUp(email: email, password: password);
+  Future<Map<String, dynamic>> signUpStudent(
+    String email,
+    String password, {
+    String? fullName,
+    String? studentCode,
+    int? universityId,
+    int? campusId,
+  }) async {
+    final metadata = <String, dynamic>{
+      if (fullName != null && fullName.trim().isNotEmpty)
+        'full_name': fullName.trim(),
+      if (studentCode != null && studentCode.trim().isNotEmpty)
+        'student_code': studentCode.trim().toUpperCase(),
+      if (universityId != null) 'university_id': universityId,
+      if (campusId != null) 'campus_id': campusId,
+    };
+    final response = await _supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: metadata,
+    );
     final authUser = response.user;
-    if (authUser == null) throw Exception("Đăng ký thất bại!");
+    if (authUser == null) throw Exception('Dang ky that bai.');
 
-    // 2. Insert vào bảng app_user với role student
-    final userRecord = await _supabase
+    // The database trigger creates the profile even if email confirmation is on.
+    if (response.session == null) {
+      return {
+        'role': 'student',
+        'id': null,
+        'emailConfirmationRequired': true,
+      };
+    }
+
+    // Fallback keeps compatibility if the migration has not been run yet.
+    var userRecord = await _supabase
+        .from('app_user')
+        .select('user_id, role')
+        .eq('auth_id', authUser.id)
+        .maybeSingle();
+    userRecord ??= await _supabase
         .from('app_user')
         .insert({
-      'auth_id': authUser.id,
-      'email': email,
-      'role': 'student',
-    })
-        .select()
+          'auth_id': authUser.id,
+          'email': email,
+          'role': 'student',
+        })
+        .select('user_id, role')
         .single();
+
+    if (fullName != null &&
+        fullName.trim().isNotEmpty &&
+        studentCode != null &&
+        studentCode.trim().isNotEmpty &&
+        universityId != null) {
+      final existingStudent = await _supabase
+          .from('student')
+          .select('student_id')
+          .eq('user_id', userRecord['user_id'])
+          .maybeSingle();
+      if (existingStudent == null) {
+        await _supabase.from('student').insert({
+          'user_id': userRecord['user_id'],
+          'university_id': universityId,
+          if (campusId != null) 'campus_id': campusId,
+          'name': fullName.trim(),
+          'email': email,
+          'student_code': studentCode.trim().toUpperCase(),
+          'phone': '',
+        });
+      }
+    }
 
     return {
       'role': userRecord['role'],
       'id': userRecord['user_id'],
+      'emailConfirmationRequired': false,
     };
   }
 
-  /// Đăng xuất
-  Future<void> signOut() async {
-    await _supabase.auth.signOut();
+  Future<List<Map<String, dynamic>>> getUniversities() async {
+    final data = await _supabase
+        .from('university')
+        .select('university_id, name')
+        .order('name');
+    return List<Map<String, dynamic>>.from(data);
   }
 
-  /// Lấy user hiện tại (nếu có)
+  Future<List<Map<String, dynamic>>> getCampuses(int universityId) async {
+    final data = await _supabase
+        .from('university_campus')
+        .select('campus_id, name, address')
+        .eq('university_id', universityId)
+        .order('name');
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  Future<void> signOut() => _supabase.auth.signOut();
+
   Future<Map<String, dynamic>?> getCurrentUser() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
-
     final userData = await _supabase
         .from('app_user')
         .select('user_id, role')
         .eq('auth_id', user.id)
-        .single();
-
+        .maybeSingle();
     if (userData == null) return null;
-
-    // (Optional) Lấy name từ bảng student nếu có
     final studentData = await _supabase
         .from('student')
         .select('name')
         .eq('user_id', userData['user_id'])
         .maybeSingle();
-
     return {
       'id': userData['user_id'],
       'role': userData['role'],
       'name': studentData?['name'],
     };
   }
+
   Future<bool> verifyCurrentPassword(String password) async {
     final user = _supabase.auth.currentUser;
-    if (user == null || user.email == null) {
-      throw Exception('Người dùng chưa đăng nhập.');
-    }
-
-    try {
-      // Thử đăng nhập lại để xác minh mật khẩu
-      await _supabase.auth.signInWithPassword(
-        email: user.email!,
-        password: password,
-      );
-      // Nếu không có lỗi, mật khẩu đúng
-      return true;
-    } on AuthException {
-      // Nếu có lỗi xác thực, tức là sai mật khẩu
-      rethrow; // Ném lại lỗi để UI bắt được
-    } catch (e) {
-      // Các lỗi khác
-      throw Exception('Lỗi không xác định khi xác minh mật khẩu.');
-    }
+    if (user?.email == null) throw Exception('Nguoi dung chua dang nhap.');
+    await _supabase.auth
+        .signInWithPassword(email: user!.email!, password: password);
+    return true;
   }
 
-  // HÀM MỚI 2: Cập nhật mật khẩu người dùng
   Future<void> updateUserPassword(String newPassword) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) {
-      throw Exception('Người dùng chưa đăng nhập.');
+    if (_supabase.auth.currentUser == null) {
+      throw Exception('Nguoi dung chua dang nhap.');
     }
-
-    try {
-      await _supabase.auth.updateUser(
-        UserAttributes(
-          password: newPassword,
-        ),
-      );
-    } catch (e) {
-      print('Lỗi khi cập nhật mật khẩu: $e');
-      throw Exception('Không thể cập nhật mật khẩu.');
-    }
+    await _supabase.auth.updateUser(UserAttributes(password: newPassword));
   }
 }

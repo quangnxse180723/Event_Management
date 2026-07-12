@@ -198,24 +198,26 @@ class _CustomNotificationWidgetState extends State<CustomNotificationWidget>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final notificationWidth =
+        screenWidth < 420 ? screenWidth - 32 : 360.0;
+
     return Material(
       color: Colors.transparent,
       child: SafeArea(
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
                     child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.9,
-                      ),
+                      width: notificationWidth,
                       decoration: BoxDecoration(
                         color: _getBackgroundColor(),
                         borderRadius: BorderRadius.circular(12),
@@ -276,10 +278,10 @@ class _CustomNotificationWidgetState extends State<CustomNotificationWidget>
                       ),
                     ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );

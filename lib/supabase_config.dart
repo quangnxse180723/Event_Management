@@ -1,8 +1,23 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Cấu hình kết nối Supabase/PostgreSQL.
+/// Có thể ghi đè bằng `--dart-define=SUPABASE_URL=...` và
+/// `--dart-define=SUPABASE_ANON_KEY=...` khi chạy ứng dụng.
+class SupabaseConfig {
+  static const url = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://jqfmmcrzggvayvinqvto.supabase.co',
+  );
+
+  static const anonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'sb_publishable_exSN0KeE4JIGyZeu0jF6Zg_WuJlbo-h',
+  );
+}
+
 Future<void> initSupabase() async {
   await Supabase.initialize(
-    url: 'https://qegseyeqojeeuvkdtzxx.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlZ3NleWVxb2plZXV2a2R0enh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjY4OTAsImV4cCI6MjA5NDk0Mjg5MH0.3AUDhkm9ayuOj1FujviUgL6GkhOLa65-tRHEtljdYUU',
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
   );
 }

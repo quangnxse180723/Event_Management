@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
@@ -62,7 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, "Email hoặc mật khẩu không đúng! Vui lòng thử lại.");
+        final message = e.toString().replaceFirst('Exception: ', '');
+        NotificationService.showError(context, message);
       }
     } finally {
       if (mounted) {

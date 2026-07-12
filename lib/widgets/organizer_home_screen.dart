@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart' as tc;
 
 import '../screen/event_management_screen.dart';
 import '../screen/SessionListScreen.dart';
+import '../screen/event_chatbot_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import 'main_layout.dart';
@@ -35,6 +36,7 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
       _OrganizerHomeContent(role: widget.role, userId: widget.userId),
       // Trang 1: Điểm danh (Dùng chung)
       const SessionListScreen(),
+      const EventChatbotScreen(),
       // Trang 2: Cài đặt (Dùng chung)
       const SettingsScreen(),
     ];
@@ -51,6 +53,7 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
       useScrollView: false,
       appBar: null,
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         backgroundColor: Colors.white,
@@ -66,6 +69,11 @@ class _OrganizerHomeScreenState extends State<OrganizerHomeScreen> {
             icon: Icon(Icons.check_circle_outline),
             activeIcon: Icon(Icons.check_circle),
             label: 'Điểm danh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy_outlined),
+            activeIcon: Icon(Icons.smart_toy),
+            label: 'Tro ly',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

@@ -6,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart' as tc;
 import 'package:student_attendance/screen/my_event_screen.dart';
 import 'package:student_attendance/screen/profile_screen.dart';
 import 'package:student_attendance/screen/QRScannerScreen.dart';
+import 'package:student_attendance/screen/event_chatbot_screen.dart';
 import 'package:student_attendance/screen/settings_screen.dart';
 
 import 'main_layout.dart';
@@ -34,8 +35,9 @@ class _StudentHomeDynamicState extends State<StudentHomeDynamic> {
     _pages = [
       // ✅ STEP 2: SỬ DỤNG WIDGET MỚI VÀ TRUYỀN `userId` VÀO
       _StudentHomeContent(userId: widget.userId), // Trang 0: Nội dung chính
-      const QRScannerScreen(),                        // Trang 1: Quét mã QR
-      ProfileScreen(userId: widget.userId),         // Trang 2: Trang tài khoản
+      const SizedBox.shrink(),
+      const EventChatbotScreen(),
+      ProfileScreen(userId: widget.userId), // Trang 2: Trang tài khoản
     ];
   }
 
@@ -45,12 +47,19 @@ class _StudentHomeDynamicState extends State<StudentHomeDynamic> {
 
   @override
   Widget build(BuildContext context) {
+    // IndexedStack keeps inactive children alive. The scanner is replaced with
+    // a placeholder outside its tab so the camera is never started in advance.
+    final pages = List<Widget>.from(_pages);
+    pages[1] =
+        _currentIndex == 1 ? const QRScannerScreen() : const SizedBox.shrink();
+
     return MainLayout(
       // Các trang con đã tự quản lý việc cuộn, nên set ở đây là false
       useScrollView: false,
       appBar: null,
       // Dùng widget BottomNavigationBar tiêu chuẩn
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         backgroundColor: Colors.white,
@@ -68,6 +77,11 @@ class _StudentHomeDynamicState extends State<StudentHomeDynamic> {
             label: 'Quét mã',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy_outlined),
+            activeIcon: Icon(Icons.smart_toy),
+            label: 'Tro ly',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_outlined),
             activeIcon: Icon(Icons.person),
             label: 'Tài khoản',
@@ -75,7 +89,7 @@ class _StudentHomeDynamicState extends State<StudentHomeDynamic> {
         ],
       ),
       // IndexedStack giúp giữ trạng thái của các trang khi chuyển qua lại
-      child: IndexedStack(index: _currentIndex, children: _pages),
+      child: IndexedStack(index: _currentIndex, children: pages),
     );
   }
 }
@@ -117,8 +131,10 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
       return;
     }
     final student = Student.fromJson(studentRow);
-    final myEventsList = await studentService.getMyEventsByStudentId(student.studentId);
-    final attendedEvents = myEventsList.where((e) => (e['status'] ?? '') == 'checked_in').toList();
+    final myEventsList =
+        await studentService.getMyEventsByStudentId(student.studentId);
+    final attendedEvents =
+        myEventsList.where((e) => (e['status'] ?? '') == 'checked_in').toList();
     final now = DateTime.now();
     final upcoming = myEventsList.where((e) {
       final event = e['event'];
@@ -127,17 +143,22 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
       return start != null && start.isAfter(now);
     }).toList();
     upcoming.sort((a, b) {
-      final aDate = DateTime.tryParse(a['event']?['start_date'] ?? '') ?? DateTime(2100);
-      final bDate = DateTime.tryParse(b['event']?['start_date'] ?? '') ?? DateTime(2100);
+      final aDate =
+          DateTime.tryParse(a['event']?['start_date'] ?? '') ?? DateTime(2100);
+      final bDate =
+          DateTime.tryParse(b['event']?['start_date'] ?? '') ?? DateTime(2100);
       return aDate.compareTo(bDate);
     });
-    final Set<DateTime> regDates = myEventsList.map((e) {
-      final event = e['event'];
-      if (event == null) return null;
-      final start = DateTime.tryParse(event['start_date'] ?? '');
-      if (start == null) return null;
-      return DateTime(start.year, start.month, start.day);
-    }).whereType<DateTime>().toSet();
+    final Set<DateTime> regDates = myEventsList
+        .map((e) {
+          final event = e['event'];
+          if (event == null) return null;
+          final start = DateTime.tryParse(event['start_date'] ?? '');
+          if (start == null) return null;
+          return DateTime(start.year, start.month, start.day);
+        })
+        .whereType<DateTime>()
+        .toSet();
 
     if (mounted) {
       setState(() {
@@ -392,9 +413,9 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                           SizedBox(height: 4),
                           Text(
                             (() {
-                              String? rawDate =
-                                  nextEvent?['event']?['start_date'] ??
-                                      nextEvent?['start_date'];
+                              String? rawDate = nextEvent?['event']
+                                      ?['start_date'] ??
+                                  nextEvent?['start_date'];
                               if (rawDate == null || rawDate.isEmpty)
                                 return 'Thời gian: -';
                               DateTime? dt;
@@ -474,10 +495,10 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                               items: List.generate(12, (i) => i + 1)
                                   .map(
                                     (m) => DropdownMenuItem(
-                                  value: m,
-                                  child: Text('Tháng $m'),
-                                ),
-                              )
+                                      value: m,
+                                      child: Text('Tháng $m'),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (m) {
                                 if (m != null) {
@@ -494,17 +515,16 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                             SizedBox(width: 8),
                             DropdownButton<int>(
                               value: calendarFocusedDay.year,
-                              items:
-                              List.generate(
+                              items: List.generate(
                                 6,
-                                    (i) => DateTime.now().year - 2 + i,
+                                (i) => DateTime.now().year - 2 + i,
                               )
                                   .map(
                                     (y) => DropdownMenuItem(
-                                  value: y,
-                                  child: Text('Năm $y'),
-                                ),
-                              )
+                                      value: y,
+                                      child: Text('Năm $y'),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (y) {
                                 if (y != null) {

@@ -2,21 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:student_attendance/screen/university_management_screen.dart';
 import 'package:student_attendance/widgets/admin_home_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'theme_provider.dart';
 import 'screen/login_screen.dart';
 import 'app_theme.dart';
+import 'supabase_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('vi_VN', null);
 
-  await Supabase.initialize(
-    url: 'https://qegseyeqojeeuvkdtzxx.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFlZ3NleWVxb2plZXV2a2R0enh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjY4OTAsImV4cCI6MjA5NDk0Mjg5MH0.3AUDhkm9ayuOj1FujviUgL6GkhOLa65-tRHEtljdYUU',
-  );
+  await initSupabase();
 
   runApp(
     ChangeNotifierProvider(
@@ -68,7 +65,7 @@ class MyApp extends StatelessWidget {
                   body: Center(
                     child: Text(
                       'Lỗi: Thông tin vai trò hoặc ID người dùng không hợp lệ.',
-                       textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 );

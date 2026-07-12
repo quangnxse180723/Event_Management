@@ -7,6 +7,7 @@ import 'main_layout.dart';
 import 'package:student_attendance/screen/settings_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screen/SessionListScreen.dart';
+import '../screen/event_chatbot_screen.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ADMIN
@@ -38,6 +39,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       _AdminHomeContent(role: widget.role, userId: widget.userId),
       // Trang 1: Điểm danh (dùng SessionListScreen như logic cũ)
       const SessionListScreen(),
+      const EventChatbotScreen(),
       // Trang 2: Cài đặt
       const SettingsScreen(),
     ];
@@ -55,6 +57,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       appBar: null,
       // Dùng widget BottomNavigationBar tiêu chuẩn
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
         backgroundColor: Colors.white,
@@ -70,6 +73,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             icon: Icon(Icons.check_circle_outline),
             activeIcon: Icon(Icons.check_circle),
             label: 'Điểm danh',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.smart_toy_outlined),
+            activeIcon: Icon(Icons.smart_toy),
+            label: 'Tro ly',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
