@@ -60,7 +60,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        backgroundColor: Colors.white,
+        // Đổi màu nền cố định thành màu nền của Theme
+        backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor ?? Theme.of(context).cardColor,
         selectedItemColor: Colors.green[700],
         unselectedItemColor: Colors.grey[600],
         items: const [
@@ -174,9 +175,9 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
           .select()
           .gte('start_date', now.toIso8601String()) // Lấy ngày >= hôm nay
           .order(
-            'start_date',
-            ascending: true,
-          ) // Sắp xếp để ngày gần nhất lên đầu
+        'start_date',
+        ascending: true,
+      ) // Sắp xếp để ngày gần nhất lên đầu
           .limit(1) // Chỉ lấy 1 kết quả
           .maybeSingle(); // Dùng maybeSingle để không lỗi nếu không có sự kiện nào
 
@@ -201,16 +202,16 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Xin chào,',
-            style: TextStyle(fontSize: 18, color: Colors.black),
+            style: TextStyle(fontSize: 18, color: Theme.of(context).textTheme.bodyLarge?.color),
           ),
-          const Text(
+          Text(
             'Admin',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Theme.of(context).textTheme.titleLarge?.color,
             ),
           ),
           const SizedBox(height: 24),
@@ -273,29 +274,29 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
             ],
           ),
 
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Sự kiện sắp tới (hiển thị cả tên sự kiện)
           if (nextEvent != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(14),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3), // Màu đen với độ trong suốt 10%
-                      blurRadius: 6,                       // Độ mờ lớn hơn
-                      offset: Offset(0, 4),                // Dịch xuống dưới một chút
+                      color: Colors.black.withOpacity(0.3), // Giữ nguyên bóng đen mờ cho card nổi bật
+                      blurRadius: 6,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.event, color: Colors.blue, size: 32),
-                    SizedBox(width: 16),
+                    const Icon(Icons.event, color: Colors.blue, size: 32),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,10 +306,10 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: Colors.black87,
+                              color: Theme.of(context).textTheme.titleMedium?.color,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
                             (() {
                               if (nextEvent?['event'] != null &&
@@ -321,20 +322,21 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                                 return 'Không có tên sự kiện';
                               }
                             })(),
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                               color: Colors.blue,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             (() {
                               String? rawDate =
                                   nextEvent?['event']?['start_date'] ??
-                                  nextEvent?['start_date'];
-                              if (rawDate == null || rawDate.isEmpty)
+                                      nextEvent?['start_date'];
+                              if (rawDate == null || rawDate.isEmpty) {
                                 return 'Thời gian: -';
+                              }
                               DateTime? dt;
                               try {
                                 dt = DateTime.tryParse(rawDate);
@@ -346,7 +348,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                                 return 'Thời gian: ' + rawDate.split('T')[0];
                               }
                             })(),
-                            style: TextStyle(color: Colors.black87),
+                            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
                           ),
                         ],
                       ),
@@ -357,20 +359,20 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
             ),
 
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Báo cáo & Thống kê',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Theme.of(context).textTheme.titleLarge?.color,
             ),
           ),
           const SizedBox(height: 16),
 
           Card(
             elevation: 4,
-            color: Colors.white,
-            surfaceTintColor: Colors.white,
+            color: Theme.of(context).cardColor,
+            surfaceTintColor: Colors.transparent, // Bỏ tint trắng để theme tối không bị lóa
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -383,11 +385,11 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                   title: 'Thống kê sự kiện',
                   subtitle: 'Xem báo cáo chi tiết theo sự kiện, trường học',
                 ),
-                const Divider(
+                Divider(
                   height: 1,
                   indent: 16,
                   endIndent: 16,
-                  color: Colors.black12,
+                  color: Theme.of(context).dividerColor,
                 ),
               ],
             ),
@@ -399,16 +401,16 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   }
 
   Widget _buildStatCard(
-    String title,
-    int value,
-    IconData icon,
-    Color color, {
-    VoidCallback? onTap,
-  }) {
+      String title,
+      int value,
+      IconData icon,
+      Color color, {
+        VoidCallback? onTap,
+      }) {
     return Card(
       elevation: 4,
-      color: Colors.white,
-      surfaceTintColor: Colors.white,
+      color: Theme.of(context).cardColor,
+      surfaceTintColor: Colors.transparent, // Fix lỗi lóa màu trắng trên Dark Mode
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -429,30 +431,30 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: Theme.of(context).textTheme.bodyMedium?.color, // Chữ phụ theo theme
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 4),
                   _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.black,
-                          ),
-                        )
+                      ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Theme.of(context).colorScheme.primary, // Đổi sang màu primary
+                    ),
+                  )
                       : Text(
-                          '$value',
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
+                    '$value',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color, // Chữ chính theo theme
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -463,11 +465,11 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   }
 
   Widget _buildReportItem(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String subtitle,
+      }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Icon(
@@ -477,13 +479,16 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+          color: Theme.of(context).textTheme.titleMedium?.color,
         ),
       ),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.black54)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+      subtitle: Text(
+          subtitle,
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)
+      ),
+      trailing: Icon(Icons.chevron_right, color: Theme.of(context).iconTheme.color),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
