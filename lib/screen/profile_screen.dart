@@ -92,7 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final phone = _phoneController.text.trim();
 
     if (name.isEmpty || studentCode.isEmpty || phone.isEmpty) {
-      NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông tin');
+      NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông跨 tin');
       return;
     }
     if (_universityId == null) {
@@ -162,6 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return MainLayout(
       useScrollView: true,
       appBar: AppBar(
+        // Bổ sung nút quay lại để giải quyết Task 2
+        leading: const BackButton(),
         title: const Text(
           "Thông tin cá nhân",
           style: TextStyle(fontWeight: FontWeight.w600),
