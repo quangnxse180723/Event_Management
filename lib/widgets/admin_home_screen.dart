@@ -8,6 +8,8 @@ import 'package:student_attendance/screen/settings_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screen/SessionListScreen.dart';
 import '../screen/event_chatbot_screen.dart';
+import '../screen/university_management_screen.dart'; // Nhập từ main
+import '../screen/user_management_screen.dart';       // Nhập từ main
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ADMIN
@@ -60,7 +62,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        // Đổi màu nền cố định thành màu nền của Theme
+        // Đổi màu nền cố định thành màu nền của Theme (Từ nhánh fix)
         backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor ?? Theme.of(context).cardColor,
         selectedItemColor: Colors.green[700],
         unselectedItemColor: Colors.grey[600],
@@ -94,8 +96,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 }
 
 // ----------------------------------------------------
-// NỘI DUNG TRANG CHỦ (_AdminHomeContent) - GIỮ NGUYÊN
-// Phần này đã đúng và sẽ hoạt động tốt trong cấu trúc mới
+// NỘI DUNG TRANG CHỦ (_AdminHomeContent)
 // ----------------------------------------------------
 class _AdminHomeContent extends StatefulWidget {
   final String role;
@@ -113,6 +114,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   int _studentCount = 0;
   int _universityCount = 0;
   int _studentsInEventCount = 0;
+  int _appUserCount = 0; // Biến từ nhánh main
   Map<String, dynamic>? nextEvent;
 
   @override
@@ -122,10 +124,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   }
 
   Future<void> _loadData() async {
-    // Không cần setState ở đây vì _isLoading đã là true
-    // Chạy đồng thời cả hai hàm fetch để tăng tốc
     await Future.wait([_fetchStats(), _fetchNextEvent()]);
-
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -133,7 +132,6 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
     }
   }
 
-  /// ✅ Lấy số lượng thống kê từ Supabase (dùng API mới)
   Future<void> _fetchStats() async {
     try {
       final supabase = Supabase.instance.client;
@@ -143,6 +141,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
         supabase.from('student').count(),
         supabase.from('university').count(),
         supabase.from('student_in_event').count(),
+        supabase.from('app_user').count(), // Fetch từ nhánh main
       ]);
 
       if (!mounted) return;
@@ -152,34 +151,30 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
         _studentCount = results[1];
         _universityCount = results[2];
         _studentsInEventCount = results[3];
+        _appUserCount = results[4];
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi tải thống kê: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải thống kê: $e'))
+      );
     }
   }
 
-  // ✅ HÀM MỚI: Lấy sự kiện sắp diễn ra gần nhất
   Future<void> _fetchNextEvent() async {
     try {
       final supabase = Supabase.instance.client;
       final now = DateTime.now();
 
-      // Truy vấn để lấy sự kiện sắp tới
       final response = await supabase
           .from('event')
           .select()
-          .gte('start_date', now.toIso8601String()) // Lấy ngày >= hôm nay
-          .order(
-        'start_date',
-        ascending: true,
-      ) // Sắp xếp để ngày gần nhất lên đầu
-          .limit(1) // Chỉ lấy 1 kết quả
-          .maybeSingle(); // Dùng maybeSingle để không lỗi nếu không có sự kiện nào
+          .gte('start_date', now.toIso8601String())
+          .order('start_date', ascending: true)
+          .limit(1)
+          .maybeSingle();
 
       if (mounted && response != null) {
         setState(() {
@@ -189,16 +184,12 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('Lỗi tải sự kiện sắp tới: $e');
-      // Không cần hiển thị lỗi ở đây, UI sẽ tự ẩn card đi
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // SingleChildScrollView đã có sẵn, nên useScrollView của MainLayout là false
     return SingleChildScrollView(
-      // Padding đã có trong MainLayout, nhưng có thể thêm ở đây nếu cần
-      // padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,6 +206,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
             ),
           ),
           const SizedBox(height: 24),
+          // Thay đổi từ nhánh main: Có 5 nút trong GridView
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -230,12 +222,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 Colors.blue,
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => EventManagementScreen(
-                      role: widget.role,
-                      userId: widget.userId,
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => EventManagementScreen(role: widget.role, userId: widget.userId)),
                 ),
               ),
               _buildStatCard(
@@ -245,9 +232,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 Colors.green,
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const StudentManagementScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const StudentManagementScreen()),
                 ),
               ),
               _buildStatCard(
@@ -255,27 +240,36 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 _universityCount,
                 Icons.school,
                 Colors.orange,
-              ),
-              _buildStatCard(
-                'SV tham gia', // Tên thẻ
-                _studentsInEventCount, // Số liệu
-                Icons.person_add_alt_1, // Icon phù hợp
-                Colors.purple, // Màu sắc
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const StudentInEventScreen(
-                      eventId: 1,
-                      eventTitle: 'Sự kiện có SV',
-                    ),
-                  ),
+                  MaterialPageRoute(builder: (context) => const UniversityScreen()),
+                ),
+              ),
+              _buildStatCard(
+                'SV tham gia',
+                _studentsInEventCount,
+                Icons.person_add_alt_1,
+                Colors.purple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StudentInEventScreen(eventId: 1, eventTitle: 'Sự kiện có SV')),
+                ),
+              ),
+              _buildStatCard(
+                'Tài khoản',
+                _appUserCount,
+                Icons.admin_panel_settings,
+                Colors.red,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UserManagementScreen()),
                 ),
               ),
             ],
           ),
 
           const SizedBox(height: 16),
-          // Sự kiện sắp tới (hiển thị cả tên sự kiện)
+          // Sự kiện sắp tới
           if (nextEvent != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
@@ -287,7 +281,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3), // Giữ nguyên bóng đen mờ cho card nổi bật
+                      color: Colors.black.withOpacity(0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 4),
                     ),
@@ -342,10 +336,9 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                                 dt = DateTime.tryParse(rawDate);
                               } catch (_) {}
                               if (dt != null) {
-                                return 'Thời gian: ' +
-                                    dt.toLocal().toString().split(' ')[0];
+                                return 'Thời gian: ${dt.toLocal().toString().split(' ')[0]}';
                               } else {
-                                return 'Thời gian: ' + rawDate.split('T')[0];
+                                return 'Thời gian: ${rawDate.split('T')[0]}';
                               }
                             })(),
                             style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
@@ -372,7 +365,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
           Card(
             elevation: 4,
             color: Theme.of(context).cardColor,
-            surfaceTintColor: Colors.transparent, // Bỏ tint trắng để theme tối không bị lóa
+            surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -394,7 +387,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
               ],
             ),
           ),
-          const SizedBox(height: 20), // Thêm khoảng trống dưới cùng
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -433,7 +426,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Theme.of(context).textTheme.bodyMedium?.color, // Chữ phụ theo theme
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -444,7 +437,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Theme.of(context).colorScheme.primary, // Đổi sang màu primary
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   )
                       : Text(
@@ -452,7 +445,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.titleLarge?.color, // Chữ chính theo theme
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                 ],
