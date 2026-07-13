@@ -27,7 +27,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _organizerController; // Trường nhập thông tin tổ chức
+  late TextEditingController _organizerController; // ✅ Giữ 1 bản duy nhất
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -119,7 +119,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     final data = {
       'title': _titleController.text,
       'description': _descriptionController.text,
-      'organizer': _organizerController.text, // Gửi dữ liệu đơn vị tổ chức
+      'organizer': _organizerController.text,
       'start_date': _startDate!.toIso8601String(),
       'end_date': _endDate!.toIso8601String(),
       'user_id': (widget.role == 'admin') ? _selectedOrganizerId : widget.userId,
@@ -151,6 +151,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
+      // ✅ Giữ nút Back hoàn chỉnh
       appBar: AppBar(
         title: Text(
           _isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới',
@@ -158,7 +159,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const BackButton(), // FIX: Nút quay lại để không bị kẹt
+        leading: const BackButton(),
         iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyLarge?.color),
       ),
       child: SingleChildScrollView(
@@ -177,7 +178,6 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Trường nhập đơn vị tổ chức
               TextFormField(
                 controller: _organizerController,
                 decoration: const InputDecoration(labelText: 'Đơn vị tổ chức (VD: Khoa CNTT)'),
