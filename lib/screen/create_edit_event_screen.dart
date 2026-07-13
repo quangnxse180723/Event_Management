@@ -27,7 +27,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _organizerController;
+  late TextEditingController _organizerController; // ✅ Giữ 1 bản duy nhất
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -151,7 +151,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      // ✅ BỔ SUNG APPBAR TẠI ĐÂY ĐỂ FIX LỖI THIẾU NÚT BACK
+      // ✅ Giữ nút Back hoàn chỉnh
       appBar: AppBar(
         title: Text(
           _isEditMode ? 'Chỉnh sửa sự kiện' : 'Tạo sự kiện mới',
@@ -159,7 +159,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const BackButton(), // Thêm nút quay lại
+        leading: const BackButton(),
         iconTheme: IconThemeData(color: Theme.of(context).textTheme.bodyLarge?.color),
       ),
       child: SingleChildScrollView(
@@ -169,7 +169,6 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Đã loại bỏ dòng Text Title cũ ở đây vì đã đưa lên AppBar
               const SizedBox(height: 8),
 
               TextFormField(

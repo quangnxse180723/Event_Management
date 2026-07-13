@@ -14,6 +14,7 @@ class QRScannerScreen extends StatefulWidget {
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isProcessing = false;
+  bool _isNavigating = false; // ✅ Cờ ngăn chặn lỗi Double Pop (Thoát 2 lần)
   final MobileScannerController _controller = MobileScannerController();
 
   Future<Map<String, int>> _getStudentInfo() async {
@@ -42,7 +43,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   Future<void> _handleBarcode(String rawValue) async {
-    if (_isProcessing) return;
+    if (_isProcessing || _isNavigating) return;
     _isProcessing = true;
 
     try {
@@ -80,8 +81,17 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           "🎉 Điểm danh thành công! Cảm ơn bạn đã tham gia.",
         );
 
+        _isNavigating = true; // Khóa điều hướng để user không bấm Back giữa chừng được nữa
+
+        // ✅ Tắt camera an toàn trước khi pop để tránh crash ngầm
+        await _controller.stop();
+
         await Future.delayed(const Duration(milliseconds: 1500));
-        if (mounted) Navigator.pop(context);
+
+        // ✅ Kiểm tra canPop để tuyệt đối không bao giờ pop nhầm Navigator root
+        if (mounted && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -103,6 +113,18 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     return MainLayout(
       useScrollView: false,
       appBar: AppBar(
+        // ✅ Quản lý nút Back thủ công để dọn dẹp bộ nhớ an toàn nếu user tự bấm thoát
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () async {
+            if (_isNavigating) return;
+            _isNavigating = true;
+            await _controller.stop();
+            if (mounted && Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
         title: const Text(
           "Quét mã QR",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),

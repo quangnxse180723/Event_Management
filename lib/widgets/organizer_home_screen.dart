@@ -7,6 +7,7 @@ import '../screen/SessionListScreen.dart';
 import '../screen/event_chatbot_screen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/student_in_event_screen.dart';
+import '../screen/organizer_profile_screen.dart'; // ✅ ĐÃ THÊM IMPORT MÀN HÌNH PROFILE
 import 'main_layout.dart';
 
 // ------------------------------
@@ -168,7 +169,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
         } else {
           studentCount = 0;
         }
-      } // <-- ĐÃ THÊM DẤU '}' BỊ THIẾU Ở ĐÂY
+      }
 
       if (!mounted) return;
       setState(() {
@@ -193,7 +194,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
           .from('event')
           .select()
           .eq('user_id',
-          widget.userId) // ✅ YÊU CẦU: Chỉ lấy sự kiện của user này
+          widget.userId) // YÊU CẦU: Chỉ lấy sự kiện của user này
           .gte('start_date', now.toIso8601String())
           .order('start_date', ascending: true)
           .limit(1)
@@ -217,7 +218,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
       final response = await supabase
           .from('event')
           .select('start_date')
-          .eq('user_id', widget.userId); // ✅ Chỉ lấy sự kiện của user này
+          .eq('user_id', widget.userId); // Chỉ lấy sự kiện của user này
 
       // Tái sử dụng logic từ StudentHomeDynamic
       final Set<DateTime> regDates = response.map((e) {
@@ -244,22 +245,55 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Lời chào (từ AdminHomeScreen)
-          const Text(
-            'Xin chào,',
-            style: TextStyle(fontSize: 18, color: Colors.black),
+          // ✅ ĐÃ THÊM LOGIC ĐIỀU HƯỚNG SANG PROFILE TẠI ĐÂY
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Xin chào,',
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                  ),
+                  Text(
+                    widget.role == 'organizer'
+                        ? 'Tổ chức'
+                        : 'Organizer', // Hiển thị vai trò
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              // Nút bấm Avatar chuyển hướng
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrganizerProfileScreen(userId: widget.userId),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.blue, width: 2),
+                  ),
+                  child: const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, color: Colors.blue, size: 28),
+                  ),
+                ),
+              ),
+            ],
           ),
-          Text(
-            widget.role == 'organizer'
-                ? 'Tổ chức'
-                : 'Organizer', // Hiển thị vai trò
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           // Thẻ thống kê (từ AdminHomeScreen, nhưng chỉ 2 thẻ)
           GridView.count(
