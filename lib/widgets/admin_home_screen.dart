@@ -8,6 +8,8 @@ import 'package:student_attendance/screen/settings_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screen/SessionListScreen.dart';
 import '../screen/event_chatbot_screen.dart';
+import '../screen/university_management_screen.dart'; // Import màn hình Trường học
+import '../screen/user_management_screen.dart';       // Import màn hình Quản lý Tài khoản
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ADMIN
@@ -112,6 +114,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   int _studentCount = 0;
   int _universityCount = 0;
   int _studentsInEventCount = 0;
+  int _appUserCount = 0; // ✅ THÊM BIẾN: Đếm số lượng tài khoản (App User)
   Map<String, dynamic>? nextEvent;
 
   @override
@@ -121,10 +124,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
   }
 
   Future<void> _loadData() async {
-    // Không cần setState ở đây vì _isLoading đã là true
-    // Chạy đồng thời cả hai hàm fetch để tăng tốc
     await Future.wait([_fetchStats(), _fetchNextEvent()]);
-
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -132,7 +132,6 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
     }
   }
 
-  /// ✅ Lấy số lượng thống kê từ Supabase (dùng API mới)
   Future<void> _fetchStats() async {
     try {
       final supabase = Supabase.instance.client;
@@ -142,6 +141,7 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
         supabase.from('student').count(),
         supabase.from('university').count(),
         supabase.from('student_in_event').count(),
+        supabase.from('app_user').count(), // ✅ THÊM LỆNH: Đếm số App User
       ]);
 
       if (!mounted) return;
@@ -151,34 +151,29 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
         _studentCount = results[1];
         _universityCount = results[2];
         _studentsInEventCount = results[3];
+        _appUserCount = results[4]; // ✅ Cập nhật biến đếm
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi tải thống kê: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải thống kê: $e'))
+      );
     }
   }
 
-  // ✅ HÀM MỚI: Lấy sự kiện sắp diễn ra gần nhất
   Future<void> _fetchNextEvent() async {
     try {
       final supabase = Supabase.instance.client;
       final now = DateTime.now();
-
-      // Truy vấn để lấy sự kiện sắp tới
       final response = await supabase
           .from('event')
           .select()
-          .gte('start_date', now.toIso8601String()) // Lấy ngày >= hôm nay
-          .order(
-            'start_date',
-            ascending: true,
-          ) // Sắp xếp để ngày gần nhất lên đầu
-          .limit(1) // Chỉ lấy 1 kết quả
-          .maybeSingle(); // Dùng maybeSingle để không lỗi nếu không có sự kiện nào
+          .gte('start_date', now.toIso8601String())
+          .order('start_date', ascending: true)
+          .limit(1)
+          .maybeSingle();
 
       if (mounted && response != null) {
         setState(() {
@@ -188,16 +183,12 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('Lỗi tải sự kiện sắp tới: $e');
-      // Không cần hiển thị lỗi ở đây, UI sẽ tự ẩn card đi
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // SingleChildScrollView đã có sẵn, nên useScrollView của MainLayout là false
     return SingleChildScrollView(
-      // Padding đã có trong MainLayout, nhưng có thể thêm ở đây nếu cần
-      // padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -249,17 +240,24 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                   ),
                 ),
               ),
+              // ✅ ĐÃ FIX TASK 2: Thêm sự kiện onTap mở màn hình UniversityScreen
               _buildStatCard(
                 'Trường học',
                 _universityCount,
                 Icons.school,
                 Colors.orange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UniversityScreen(),
+                  ),
+                ),
               ),
               _buildStatCard(
-                'SV tham gia', // Tên thẻ
-                _studentsInEventCount, // Số liệu
-                Icons.person_add_alt_1, // Icon phù hợp
-                Colors.purple, // Màu sắc
+                'SV tham gia',
+                _studentsInEventCount,
+                Icons.person_add_alt_1,
+                Colors.purple,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -270,8 +268,22 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                   ),
                 ),
               ),
+              // ✅ ĐÃ FIX TASK 1: Thêm thẻ Quản lý Tài khoản (CRUD App User)
+              _buildStatCard(
+                'Tài khoản',
+                _appUserCount,
+                Icons.admin_panel_settings,
+                Colors.red,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UserManagementScreen(),
+                  ),
+                ),
+              ),
             ],
           ),
+
 
           SizedBox(height: 16),
           // Sự kiện sắp tới (hiển thị cả tên sự kiện)

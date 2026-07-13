@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../domain/entities/University.dart';
 import '../services/university_service.dart';
-import '../widgets/main_layout.dart'; // THÊM IMPORT NÀY
+import '../widgets/main_layout.dart';
 
 class UniversityScreen extends StatefulWidget {
   const UniversityScreen({Key? key}) : super(key: key);
@@ -41,7 +41,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
       if (id == newId) {
         newId++;
       } else if (id > newId) {
-        break; // tìm được khoảng trống
+        break;
       }
     }
     return newId;
@@ -54,57 +54,62 @@ class _UniversityScreenState extends State<UniversityScreen> {
 
     showDialog(
       context: context,
-      builder: (_) =>
-          AlertDialog(
-            title: Text(
-                uni == null ? "Thêm Trường/Đơn vị" : "Sửa Trường/Đơn vị"),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl,
-                      decoration: InputDecoration(labelText: "Tên")),
-                  TextField(controller: addressCtrl,
-                      decoration: InputDecoration(labelText: "Địa chỉ")),
-                  TextField(controller: contactCtrl,
-                      decoration: InputDecoration(labelText: "Liên hệ")),
-                ],
+      builder: (_) => AlertDialog(
+        title: Text(uni == null ? "Thêm Trường/Đơn vị" : "Sửa Trường/Đơn vị"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: "Tên"),
               ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(context), child: Text("Hủy")),
-              ElevatedButton(
-                onPressed: () async {
-                  if (uni == null) {
-                    // Thêm mới
-                    await UniversityService().addUniversity(
-                      University(
-                        name: nameCtrl.text,
-                        address: addressCtrl.text,
-                        contactInfo: contactCtrl.text,
-                      ),
-                    );
-                  } else {
-                    // Sửa (giữ nguyên)
-                    await UniversityService().updateUniversity(
-                      University(
-                        universityId: uni.universityId,
-                        name: nameCtrl.text,
-                        address: addressCtrl.text,
-                        contactInfo: contactCtrl.text,
-                      ),
-                    );
-                  }
-                  if (mounted) {
-                    Navigator.pop(context);
-                    _loadData();
-                  }
-                },
-                child: Text("Lưu"),
+              TextField(
+                controller: addressCtrl,
+                decoration: const InputDecoration(labelText: "Địa chỉ"),
+              ),
+              TextField(
+                controller: contactCtrl,
+                decoration: const InputDecoration(labelText: "Liên hệ"),
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            // Đảm bảo text hiển thị rõ trên cả Dark/Light mode
+            child: Text("Hủy", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (uni == null) {
+                await UniversityService().addUniversity(
+                  University(
+                    name: nameCtrl.text,
+                    address: addressCtrl.text,
+                    contactInfo: contactCtrl.text,
+                  ),
+                );
+              } else {
+                await UniversityService().updateUniversity(
+                  University(
+                    universityId: uni.universityId,
+                    name: nameCtrl.text,
+                    address: addressCtrl.text,
+                    contactInfo: contactCtrl.text,
+                  ),
+                );
+              }
+              if (mounted) {
+                Navigator.pop(context);
+                _loadData();
+              }
+            },
+            child: const Text("Lưu"),
+          ),
+        ],
+      ),
     );
   }
 
@@ -117,13 +122,15 @@ class _UniversityScreenState extends State<UniversityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Hủy"),
+            // Thích ứng màu Dark/Light Mode
+            child: Text("Hủy", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Xóa"),
             style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text("Xóa"),
           ),
         ],
       ),
@@ -150,37 +157,37 @@ class _UniversityScreenState extends State<UniversityScreen> {
     }
   }
 
-  // Thay phần build của UniversityScreen
   @override
   Widget build(BuildContext context) {
     return MainLayout(
       appBar: AppBar(
-        title: Text("Quản lý Trường/Đơn vị"),
+        title: const Text("Quản lý Trường/Đơn vị"),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // ✅ FIX TASK: Bổ sung nút Back để người dùng không bị kẹt lại
+        leading: const BackButton(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showForm(),
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
-      useScrollView: true, // ✅ Sử dụng SingleChildScrollView
+      useScrollView: true,
       child: isLoading
           ? SizedBox(
-        height: MediaQuery
-            .of(context)
-            .size
-            .height * 0.5,
-        child: Center(child: CircularProgressIndicator()),
+        height: MediaQuery.of(context).size.height * 0.5,
+        child: const Center(child: CircularProgressIndicator()),
       )
           : Column(
         children: universities.map((uni) {
           return Card(
-            margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            // Thích ứng Dark/Light Mode cho Card
+            color: Theme.of(context).cardColor,
             child: ListTile(
               isThreeLine: true,
               title: Text(
                 uni.name,
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,12 +201,12 @@ class _UniversityScreenState extends State<UniversityScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.edit, color: Colors.blue),
+                    icon: const Icon(Icons.edit, color: Colors.blue),
                     onPressed: () => _showForm(uni: uni),
                   ),
                   if (uni.universityId != null)
                     IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
+                      icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () => _deleteUniversity(uni.universityId!),
                     ),
                 ],
