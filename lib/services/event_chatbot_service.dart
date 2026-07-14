@@ -4,17 +4,15 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../env/env.dart';
 
 class EventChatbotService {
   EventChatbotService({SupabaseClient? supabase, http.Client? httpClient})
       : _supabase = supabase ?? Supabase.instance.client,
         _httpClient = httpClient ?? http.Client();
 
-  static const _geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
-  static const _geminiModel = String.fromEnvironment(
-    'GEMINI_MODEL',
-    defaultValue: 'gemini-3.1-flash-lite',
-  );
+  static const _geminiApiKey = Env.geminiApiKey;
+  static const _geminiModel = Env.geminiModel;
 
   final SupabaseClient _supabase;
   final http.Client _httpClient;
