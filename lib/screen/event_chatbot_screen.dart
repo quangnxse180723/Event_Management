@@ -16,7 +16,7 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
   final List<ChatTurn> _messages = const [
     ChatTurn(
       text:
-          'Xin chao, minh la Poki. Ban co the hoi ve su kien hoac cac cau hoi chung nhu ngay thang, meo hoc tap va chuan bi su kien.',
+          'Xin chào, mình là Poki. Bạn có thể hỏi về sự kiện hoặc các câu hỏi chung như ngày tháng, mẹo học tập và chuẩn bị sự kiện.',
       isUser: false,
     ),
   ].toList();
@@ -24,11 +24,11 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
   bool _isSending = false;
 
   final List<String> _suggestions = const [
-    'Su kien sap toi dien ra khi nao?',
-    'Su kien nao co phien gan nhat?',
-    'Dia diem cua cac phien la o dau?',
-    'Co can mang theo laptop khong?',
-    'Hom nay la ngay bao nhieu?',
+    'Sự kiện sắp tới diễn ra khi nào?',
+    'Sự kiện nào có phiên gần nhất?',
+    'Địa điểm của các phiên là ở đâu?',
+    'Có cần mang theo laptop không?',
+    'Hôm nay là ngày bao nhiêu?',
   ];
 
   @override
@@ -76,7 +76,7 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
       setState(() {
         _messages.add(
           const ChatTurn(
-            text: 'Poki dang gap su co khong xac dinh. Vui long thu lai sau.',
+            text: 'Poki đang gặp sự cố không xác định. Vui lòng thử lại sau.',
             isUser: false,
           ),
         );
@@ -131,7 +131,7 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -141,26 +141,26 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 22,
             backgroundColor: Color(0xFFE8F5E9),
             child: Icon(Icons.smart_toy_outlined, color: Colors.green),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'AI Tro ly ao',
+                const Text(
+                  'AI Trợ lý ảo',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Event Chatbot Assistant (Poki)',
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54),
                 ),
               ],
             ),
@@ -182,7 +182,7 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
           return ActionChip(
             label: Text(suggestion),
             onPressed: _isSending ? null : () => _sendMessage(suggestion),
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).cardColor,
             side: BorderSide(color: Colors.green.shade200),
             labelStyle: TextStyle(color: Colors.green.shade800),
           );
@@ -204,9 +204,9 @@ class _EventChatbotScreenState extends State<EventChatbotScreen> {
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _sendMessage(),
               decoration: InputDecoration(
-                hintText: 'Hoi ve su kien, dia diem, thoi gian...',
+                hintText: 'Hỏi về sự kiện, địa điểm, thời gian...',
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -259,7 +259,7 @@ class _ChatBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
-          color: isUser ? Colors.green.shade600 : Colors.white,
+          color: isUser ? Colors.green.shade600 : Theme.of(context).cardColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),
@@ -277,7 +277,7 @@ class _ChatBubble extends StatelessWidget {
         child: Text(
           message.text,
           style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
+            color: isUser ? Colors.white : Theme.of(context).textTheme.bodyMedium?.color,
             height: 1.35,
           ),
         ),
@@ -297,7 +297,7 @@ class _TypingBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 5),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -312,7 +312,7 @@ class _TypingBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Text('Poki dang tra loi...'),
+            const Text('Poki đang trả lời...'),
           ],
         ),
       ),

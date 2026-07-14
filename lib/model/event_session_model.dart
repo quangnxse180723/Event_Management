@@ -5,6 +5,7 @@ class EventSession {
   final DateTime startTime;
   final DateTime endTime;
   final String location;
+  final String? qrSecretToken;
 
   EventSession({
     this.sessionId,
@@ -13,6 +14,7 @@ class EventSession {
     required this.startTime,
     required this.endTime,
     required this.location,
+    this.qrSecretToken,
   });
 
   factory EventSession.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class EventSession {
       startTime: DateTime.parse(json['start_time']),
       endTime: DateTime.parse(json['end_time']),
       location: json['location'],
+      qrSecretToken: json['qr_secret_token'],
     );
   }
 
@@ -33,6 +36,7 @@ class EventSession {
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       'location': location,
+      'qr_secret_token': qrSecretToken,
     };
 
     return data;

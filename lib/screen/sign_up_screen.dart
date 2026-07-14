@@ -51,7 +51,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         NotificationService.showError(
           context,
-          'Khong the tai danh sach truong. Hay thu lai sau.',
+          'Không thể tải danh sách trường. Hãy thử lại sau.',
         );
       }
     } finally {
@@ -73,7 +73,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         NotificationService.showError(
           context,
-          'Khong the tai danh sach co so. Hay thu lai sau.',
+          'Không thể tải danh sách cơ sở. Hãy thử lại sau.',
         );
       }
     } finally {
@@ -116,26 +116,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _campuses = const [];
         _detectedUniversityName = result.universityName;
         final populated = <String>[
-          if (result.fullName != null) 'ho ten',
+          if (result.fullName != null) 'họ tên',
           if (result.studentCode != null) 'MSSV',
-          if (matchedUniversityId != null) 'truong',
+          if (matchedUniversityId != null) 'trường',
         ];
         _scanSummary = populated.isEmpty
-            ? 'Da doc duoc the, hay nhap thong tin con thieu.'
-            : 'Da dien ${populated.join(', ')}. Kiem tra lai truoc khi dang ky.';
+            ? 'Đã đọc được thẻ, hãy nhập thông tin còn thiếu.'
+            : 'Đã điền ${populated.join(', ')}. Kiểm tra lại trước khi đăng ký.';
       });
       if (matchedUniversityId != null) {
         await _loadCampuses(matchedUniversityId);
       }
       if (!mounted) return;
-      NotificationService.showSuccess(context, 'Da quet the sinh vien.');
+      NotificationService.showSuccess(context, 'Đã quét thẻ sinh viên.');
     } on StudentCardOcrException catch (error) {
       if (mounted) NotificationService.showError(context, error.message);
     } catch (_) {
       if (mounted) {
         NotificationService.showError(
           context,
-          'Khong the doc anh the. Hay thu lai voi anh sang va ro hon.',
+          'Không thể đọc ảnh thẻ. Hãy thử lại với ảnh sáng và rõ hơn.',
         );
       }
     } finally {
@@ -206,12 +206,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate() || _universityId == null) {
       if (_universityId == null) {
-        NotificationService.showError(context, 'Vui long chon truong cua ban.');
+        NotificationService.showError(context, 'Vui lòng chọn trường của bạn.');
       }
       return;
     }
     if (_campuses.isNotEmpty && _campusId == null) {
-      NotificationService.showError(context, 'Vui long chon co so cua ban.');
+      NotificationService.showError(context, 'Vui lòng chọn cơ sở của bạn.');
       return;
     }
 
@@ -229,7 +229,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (user['emailConfirmationRequired'] == true) {
         NotificationService.showSuccess(
           context,
-          'Da tao tai khoan. Hay xac nhan email roi dang nhap.',
+          'Đã tạo tài khoản. Hãy xác nhận email rồi đăng nhập.',
         );
         Navigator.pop(context);
         return;
@@ -237,7 +237,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       NotificationService.showSuccess(
         context,
-        'Dang ky tai khoan thanh cong! Chao mung ban den voi he thong.',
+        'Đăng ký tài khoản thành công! Chào mừng bạn đến với hệ thống.',
       );
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
@@ -254,7 +254,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         NotificationService.showError(
           context,
-          'Dang ky khong thanh cong: ${_readableError(error)}',
+          'Đăng ký không thành công: ${_readableError(error)}',
         );
       }
     } finally {
@@ -265,8 +265,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _readableError(Object error) {
     final message = error.toString().replaceFirst('Exception: ', '');
     if (message.contains('duplicate key') ||
-        message.contains('already registered')) {
-      return 'Email hoac ma sinh vien da ton tai.';
+        message.contains('already registered') ||
+        message.contains('Database error saving new user')) {
+      return 'Email hoặc mã số sinh viên đã tồn tại trong hệ thống.';
     }
     return message;
   }
@@ -307,19 +308,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
             const SizedBox(height: 16),
             const Center(
               child: Text(
-                'Dang ky sinh vien',
+                'Đăng ký sinh viên',
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              'AI doc the sinh vien de tu dong dien thong tin.',
-              style: TextStyle(color: Colors.green.shade900),
+              'AI đọc thẻ sinh viên để tự động điền thông tin.',
+              style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.green.shade300 : Colors.green.shade900),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Kiem tra va sua lai thong tin truoc khi dang ky.',
-              style: TextStyle(color: Colors.black54, fontSize: 12),
+            Text(
+              'Kiểm tra và sửa lại thông tin trước khi đăng ký.',
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54, fontSize: 12),
             ),
             const SizedBox(height: 10),
             Row(
@@ -330,7 +331,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ? null
                         : () => _scanStudentCard(ImageSource.camera),
                     icon: const Icon(Icons.photo_camera_outlined),
-                    label: const Text('Chup the'),
+                    label: const Text('Chụp thẻ'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -340,7 +341,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ? null
                         : () => _scanStudentCard(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Chon anh'),
+                    label: const Text('Chọn ảnh'),
                   ),
                 ),
               ],
@@ -349,7 +350,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 12),
               const LinearProgressIndicator(),
               const SizedBox(height: 6),
-              const Center(child: Text('Dang doc thong tin tren the...')),
+              const Center(child: Text('Đang đọc thông tin trên thẻ...')),
             ],
             if (_scanSummary != null) ...[
               const SizedBox(height: 10),
@@ -359,26 +360,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
             const SizedBox(height: 20),
             _input(
               controller: _nameController,
-              label: 'Ho va ten',
+              label: 'Họ và tên',
               icon: Icons.person_outline,
-              validator: _required('Vui long nhap ho va ten.'),
+              validator: _required('Vui lòng nhập họ và tên.'),
             ),
             const SizedBox(height: 14),
             _input(
               controller: _studentCodeController,
-              label: 'Ma so sinh vien',
+              label: 'Mã số sinh viên',
               icon: Icons.badge_outlined,
               textCapitalization: TextCapitalization.characters,
-              validator: _required('Vui long nhap ma so sinh vien.'),
+              validator: _required('Vui lòng nhập mã số sinh viên.'),
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<int>(
               key: ValueKey(_universityId),
               initialValue: _universityId,
               isExpanded: true,
-              decoration: _decoration('Truong dai hoc', Icons.school_outlined),
+              decoration: _decoration('Trường đại học', Icons.school_outlined),
               hint: Text(
-                  _loadingUniversities ? 'Dang tai truong...' : 'Chon truong'),
+                  _loadingUniversities ? 'Đang tải trường...' : 'Chọn trường'),
               items: _universities
                   .map(
                     (university) => DropdownMenuItem<int>(
@@ -392,12 +393,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   .toList(),
               onChanged: _loadingUniversities ? null : _onUniversityChanged,
               validator: (value) =>
-                  value == null ? 'Vui long chon truong.' : null,
+                  value == null ? 'Vui lòng chọn trường.' : null,
             ),
             if (_detectedUniversityName != null && _universityId == null) ...[
               const SizedBox(height: 6),
               Text(
-                'OCR doc truong: $_detectedUniversityName. Truong nay chua co trong danh sach.',
+                'OCR đọc trường: $_detectedUniversityName. Trường này chưa có trong danh sách.',
                 style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
               ),
             ],
@@ -411,8 +412,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 key: ValueKey('campus-$_campusId'),
                 initialValue: _campusId,
                 isExpanded: true,
-                decoration: _decoration('Co so', Icons.location_city_outlined),
-                hint: const Text('Chon co so'),
+                decoration: _decoration('Cơ sở', Icons.location_city_outlined),
+                hint: const Text('Chọn cơ sở'),
                 items: _campuses
                     .map(
                       (campus) => DropdownMenuItem<int>(
@@ -426,21 +427,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     .toList(),
                 onChanged: (value) => setState(() => _campusId = value),
                 validator: (value) =>
-                    value == null ? 'Vui long chon co so.' : null,
+                    value == null ? 'Vui lòng chọn cơ sở.' : null,
               ),
             ],
             const SizedBox(height: 14),
             _input(
               controller: _emailController,
-              label: 'Email sinh vien',
+              label: 'Email sinh viên',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Vui long nhap email.';
+                  return 'Vui lòng nhập email.';
                 }
                 if (!value.contains('@')) {
-                  return 'Email chua dung dinh dang.';
+                  return 'Email chưa đúng định dạng.';
                 }
                 return null;
               },
@@ -449,7 +450,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             TextFormField(
               controller: _passwordController,
               obscureText: _obscureText,
-              decoration: _decoration('Mat khau', Icons.lock_outline).copyWith(
+              decoration: _decoration('Mật khẩu', Icons.lock_outline).copyWith(
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscureText
@@ -461,7 +462,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               validator: (value) {
                 if (value == null || value.length < 6) {
-                  return 'Mat khau can it nhat 6 ky tu.';
+                  return 'Mật khẩu cần ít nhất 6 ký tự.';
                 }
                 return null;
               },
@@ -487,7 +488,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             color: Colors.white, strokeWidth: 2),
                       )
                     : const Text(
-                        'DANG KY',
+                        'ĐĂNG KÝ',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -497,7 +498,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             Center(
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Da co tai khoan? Dang nhap'),
+                child: const Text('Đã có tài khoản? Đăng nhập'),
               ),
             ),
           ],
@@ -526,7 +527,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: Theme.of(context).cardColor,
       labelText: label,
       prefixIcon: Icon(icon, color: Colors.green),
       border: OutlineInputBorder(

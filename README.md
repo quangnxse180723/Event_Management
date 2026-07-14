@@ -50,7 +50,7 @@ On Windows, you can put local secrets in `.env.local` and run:
 Optional model override:
 
 ```bash
-flutter run --dart-define=GEMINI_API_KEY=your-gemini-api-key --dart-define=GEMINI_MODEL=gemini-2.5-flash
+flutter run --dart-define=GEMINI_API_KEY=your-gemini-api-key --dart-define=GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
 Do not commit a real Gemini API key into source code.

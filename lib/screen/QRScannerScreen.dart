@@ -114,7 +114,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       useScrollView: false,
       appBar: AppBar(
         // ✅ Quản lý nút Back thủ công để dọn dẹp bộ nhớ an toàn nếu user tự bấm thoát
-        leading: IconButton(
+        leading: Navigator.canPop(context) ? IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () async {
             if (_isNavigating) return;
@@ -124,7 +124,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               Navigator.pop(context);
             }
           },
-        ),
+        ) : null,
         title: const Text(
           "Quét mã QR",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
@@ -138,6 +138,22 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           // Camera Scanner
           MobileScanner(
             controller: _controller,
+            errorBuilder: (BuildContext context, MobileScannerException error) {
+              return const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.videocam_off, color: Colors.white, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      'Không thể truy cập Camera.\nVui lòng cấp quyền trong Cài đặt hệ thống.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            },
             onDetect: (barcodeCapture) {
               final barcode = barcodeCapture.barcodes.first;
               if (barcode.rawValue != null && !_isProcessing) {

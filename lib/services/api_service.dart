@@ -10,15 +10,16 @@ class ApiService {
   /// Lấy danh sách người dùng có vai trò là 'organizer' cùng với email.
   Future<List<Map<String, dynamic>>> fetchOrganizers() async {
     try {
-      // SỬA LỖI: Gọi đúng hàm RPC 'get_organizers' đã được cập nhật
-      final response = await supabase.rpc('get_organizers');
+      // SỬA LỖI: Truy vấn trực tiếp từ bảng app_user thay vì dùng RPC
+      final response = await supabase
+          .from('app_user')
+          .select('user_id, email')
+          .eq('role', 'organizer');
 
-      // Dữ liệu trả về từ RPC đã đúng định dạng, không cần xử lý thêm.
       return List<Map<String, dynamic>>.from(response);
 
     } catch (e) {
       print('Lỗi khi tải danh sách organizers: $e');
-      // Thêm thông tin lỗi chi tiết hơn
       if (e is PostgrestException) {
         throw Exception('Lỗi server khi tải organizers: ${e.message}');
       }

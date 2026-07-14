@@ -162,8 +162,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return MainLayout(
       useScrollView: true,
       appBar: AppBar(
-        // Bổ sung nút quay lại để giải quyết Task 2
-        leading: const BackButton(),
         title: const Text(
           "Thông tin cá nhân",
           style: TextStyle(fontWeight: FontWeight.w600),

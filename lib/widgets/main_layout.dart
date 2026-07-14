@@ -28,24 +28,27 @@ class MainLayout extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+
     // --- ANH BỌC CÁI SCAFFOLD BẰNG THEME NÀY ---
     return Theme(
       // Dùng Theme.of(context).copyWith để giữ lại style gốc
       // và chỉ ghi đè những gì mình muốn (là cái appBarTheme)
       data: Theme.of(context).copyWith(
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           // --- CHỈNH MẶC ĐỊNH CHO APPBAR ---
           backgroundColor: Colors.transparent, // Luôn trong suốt
           elevation: 0, // Luôn không có bóng
 
           // Màu cho ICON (như nút back, nút import)
-          iconTheme: IconThemeData(color: Colors.black),
+          iconTheme: IconThemeData(color: textColor),
           // Màu cho ACTIONS (như nút import)
-          actionsIconTheme: IconThemeData(color: Colors.black),
+          actionsIconTheme: IconThemeData(color: textColor),
 
           // Style cho TIÊU ĐỀ (chữ "Quản lý Sinh viên")
           titleTextStyle: TextStyle(
-            color: Colors.black, // <-- Chữ màu đen
+            color: textColor, // <-- Chữ đổi theo theme
             fontWeight: FontWeight.bold, // <-- Chữ đậm
             fontSize: 20, // <-- Cỡ chữ 20 cho rõ
           ),
@@ -73,7 +76,9 @@ class MainLayout extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
+                  colors: isDark
+                      ? [const Color(0xFF1E1E1E), const Color(0xFF121212)]
+                      : [
                     Colors.green[100]!,
                     Colors.green[50]!,
                   ],
@@ -86,7 +91,7 @@ class MainLayout extends StatelessWidget {
             // Lớp 2: Sóng trên
             CustomPaint(
               size: Size(screenWidth, screenHeight * 0.4),
-              painter: WavyHeaderPainter(),
+              painter: WavyHeaderPainter(isDark: isDark),
             ),
 
             // Lớp 2.5: Sóng dưới
@@ -94,7 +99,7 @@ class MainLayout extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: CustomPaint(
                 size: Size(screenWidth, screenHeight * 0.2),
-                painter: WavyFooterPainter(),
+                painter: WavyFooterPainter(isDark: isDark),
               ),
             ),
 
@@ -123,11 +128,14 @@ class MainLayout extends StatelessWidget {
 // --- CLASS VẼ SÓNG TRÊN ---
 // (Giữ nguyên)
 class WavyHeaderPainter extends CustomPainter {
+  final bool isDark;
+  WavyHeaderPainter({this.isDark = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     // Sóng 1 (sau, đậm hơn)
     var paint1 = Paint()
-      ..color = Colors.green[300]!
+      ..color = isDark ? Colors.green[900]!.withOpacity(0.4) : Colors.green[300]!
       ..style = PaintingStyle.fill;
 
     var path1 = Path();
@@ -143,7 +151,7 @@ class WavyHeaderPainter extends CustomPainter {
 
     // Sóng 2 (trước, nhạt hơn)
     var paint2 = Paint()
-      ..color = Colors.green[200]!
+      ..color = isDark ? Colors.green[800]!.withOpacity(0.3) : Colors.green[200]!
       ..style = PaintingStyle.fill;
 
     var path2 = Path();
@@ -167,11 +175,14 @@ class WavyHeaderPainter extends CustomPainter {
 // --- CLASS VẼ SÓNG DƯỚI ---
 // (Giữ nguyên)
 class WavyFooterPainter extends CustomPainter {
+  final bool isDark;
+  WavyFooterPainter({this.isDark = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     // Sóng 1 (sau, đậm hơn)
     var paint1 = Paint()
-      ..color = Colors.green[300]!
+      ..color = isDark ? Colors.green[900]!.withOpacity(0.4) : Colors.green[300]!
       ..style = PaintingStyle.fill;
 
     var path1 = Path();
@@ -187,7 +198,7 @@ class WavyFooterPainter extends CustomPainter {
 
     // Sóng 2 (trước, nhạt hơn)
     var paint2 = Paint()
-      ..color = Colors.green[200]!
+      ..color = isDark ? Colors.green[800]!.withOpacity(0.3) : Colors.green[200]!
       ..style = PaintingStyle.fill;
 
     var path2 = Path();

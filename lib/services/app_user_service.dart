@@ -26,7 +26,6 @@ class AppUserService {
       'auth_id': uid,       // liên kết với Auth user
       'email': email,
       'role': 'student',
-      'password_hash': password, // password tạm để admin gửi cho sinh viên
     }).select();
 
     if (response.isEmpty) throw Exception('Failed to create app_user');

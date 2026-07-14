@@ -61,14 +61,24 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final message = e.toString().replaceFirst('Exception: ', '');
-        NotificationService.showError(context, message);
+        NotificationService.showError(context, _readableError(e));
       }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
       }
     }
+  }
+
+  String _readableError(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '');
+    if (message.contains('email_not_confirmed') || message.contains('Email not confirmed')) {
+      return 'Chưa xác thực Email.\nLỗi gốc: $message';
+    }
+    if (message.contains('Invalid login credentials')) {
+      return 'Sai email hoặc mật khẩu.\nLỗi gốc: $message';
+    }
+    return 'Lỗi: $message';
   }
 
   @override
@@ -81,6 +91,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     Color primaryColor = Colors.green;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final hintColor = isDark ? Colors.white70 : Colors.black54;
+    final inputFillColor = Theme.of(context).cardColor;
 
     return MainLayout(
       child: Column(
@@ -95,13 +109,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          const Center(
+          Center(
             child: Text(
               "Đăng nhập",
               style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: textColor,
               ),
             ),
           ),
@@ -110,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _emailController,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: inputFillColor,
               labelText: "Email",
               prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
               border: OutlineInputBorder(
@@ -130,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: _obscureText,
             decoration: InputDecoration(
               filled: true,
-              fillColor: Colors.white,
+              fillColor: inputFillColor,
               labelText: "Mật khẩu",
               prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
               suffixIcon: IconButton(
@@ -178,10 +192,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          const Center(
+          Center(
             child: Text(
               "Chưa có tài khoản?",
-              style: TextStyle(color: Colors.black54, fontSize: 15),
+              style: TextStyle(color: hintColor, fontSize: 15),
             ),
           ),
           const SizedBox(height: 16),
@@ -197,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: primaryColor),
                 foregroundColor: primaryColor,
-                backgroundColor: Colors.white.withOpacity(0.5),
+                backgroundColor: inputFillColor.withOpacity(0.5),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

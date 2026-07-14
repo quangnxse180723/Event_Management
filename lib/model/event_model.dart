@@ -7,6 +7,8 @@ class Event {
   final String organizer;
   final DateTime startDate;
   final DateTime endDate;
+  final String? imageUrl;
+  final String? location;
 
   Event({
     this.id,
@@ -16,6 +18,8 @@ class Event {
     required this.organizer,
     required this.startDate,
     required this.endDate,
+    this.imageUrl,
+    this.location,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -27,6 +31,8 @@ class Event {
       organizer: json['organizer'] ?? '',
       startDate: DateTime.parse(json['start_date']),
       endDate: DateTime.parse(json['end_date']),
+      imageUrl: json['image_url'],
+      location: json['location'],
     );
   }
 

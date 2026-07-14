@@ -25,7 +25,7 @@ class StudentCardOcrService {
   Future<StudentCardOcrResult> extract(Uint8List imageBytes) async {
     if (!isConfigured) {
       throw const StudentCardOcrException(
-        'Chua cau hinh OCR_SPACE_API_KEY cho chuc nang quet the.',
+        'Chưa cấu hình OCR_SPACE_API_KEY cho chức năng quét thẻ.',
       );
     }
 
@@ -45,30 +45,30 @@ class StudentCardOcrService {
       ).timeout(_requestTimeout);
     } on TimeoutException {
       throw const StudentCardOcrException(
-        'OCR.space mat qua nhieu thoi gian. Hay thu lai voi anh ro hon.',
+        'OCR.space mất quá nhiều thời gian. Hãy thử lại với ảnh rõ hơn.',
       );
     } on http.ClientException {
       throw const StudentCardOcrException(
-        'Khong the ket noi den OCR.space. Hay kiem tra mang va thu lai.',
+        'Không thể kết nối đến OCR.space. Hãy kiểm tra mạng và thử lại.',
       );
     }
 
     final body = _decodeBody(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StudentCardOcrException(
-        _readError(body) ?? 'OCR.space khong the xu ly anh the luc nay.',
+        _readError(body) ?? 'OCR.space không thể xử lý ảnh thẻ lúc này.',
       );
     }
     if (body['IsErroredOnProcessing'] == true) {
       throw StudentCardOcrException(
-        _readError(body) ?? 'OCR.space khong the doc noi dung tren the.',
+        _readError(body) ?? 'OCR.space không thể đọc nội dung trên thẻ.',
       );
     }
 
     final results = body['ParsedResults'];
     if (results is! List || results.isEmpty) {
       throw const StudentCardOcrException(
-        'Khong tim thay chu tren the. Hay chup lai anh sang va khong bi loe.',
+        'Không tìm thấy chữ trên thẻ. Hãy chụp lại ảnh sáng và không bị lóa.',
       );
     }
     final rawText = results
@@ -79,7 +79,7 @@ class StudentCardOcrService {
         .trim();
     if (rawText.isEmpty) {
       throw const StudentCardOcrException(
-        'Khong doc duoc chu tren the. Hay chup lai anh ro hon.',
+        'Không đọc được chữ trên thẻ. Hãy chụp lại ảnh rõ hơn.',
       );
     }
     return parseText(rawText);

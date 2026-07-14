@@ -5,8 +5,8 @@ class AppUserModel extends AppUser {
     required super.userId,
     required super.email,
     required super.role,
-    super.passwordHash,
     super.authId,
+    super.avatarUrl,
   });
 
   factory AppUserModel.fromJson(Map<String, dynamic> json) {
@@ -14,8 +14,8 @@ class AppUserModel extends AppUser {
       userId: json['user_id'] as int,
       email: json['email'] as String,
       role: json['role'] as String,
-      passwordHash: json['password_hash'] as String?,
       authId: json['auth_id'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 }

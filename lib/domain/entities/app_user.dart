@@ -2,15 +2,15 @@ class AppUser {
   final int userId;
   final String email;
   final String role;
-  final String? passwordHash;
   final String? authId;
+  final String? avatarUrl;
 
   const AppUser({
     required this.userId,
     required this.email,
     required this.role,
-    this.passwordHash,
     this.authId,
+    this.avatarUrl,
   });
 
   bool get isAdmin => role.toLowerCase() == 'admin';
@@ -22,8 +22,8 @@ class AppUser {
       userId: json['user_id'] as int,
       email: json['email'] as String,
       role: json['role'] as String,
-      passwordHash: json['password_hash'] as String?,
       authId: json['auth_id'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -32,8 +32,8 @@ class AppUser {
       'user_id': userId,
       'email': email,
       'role': role,
-      'password_hash': passwordHash,
       'auth_id': authId,
+      'avatar_url': avatarUrl,
     };
   }
 }

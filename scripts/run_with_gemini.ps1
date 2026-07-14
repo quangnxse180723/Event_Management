@@ -27,7 +27,7 @@ if (-not $values.ContainsKey('GEMINI_API_KEY') -or [string]::IsNullOrWhiteSpace(
 $model = if ($values.ContainsKey('GEMINI_MODEL') -and -not [string]::IsNullOrWhiteSpace($values['GEMINI_MODEL'])) {
   $values['GEMINI_MODEL']
 } else {
-  'gemini-2.5-flash'
+  'gemini-3.1-flash-lite'
 }
 
 $flutterArgs = @(

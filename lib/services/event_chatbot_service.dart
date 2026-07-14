@@ -13,7 +13,7 @@ class EventChatbotService {
   static const _geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
   static const _geminiModel = String.fromEnvironment(
     'GEMINI_MODEL',
-    defaultValue: 'gemini-2.5-flash',
+    defaultValue: 'gemini-3.1-flash-lite',
   );
 
   final SupabaseClient _supabase;
@@ -28,9 +28,9 @@ class EventChatbotService {
     required List<ChatTurn> history,
   }) async {
     if (!isConfigured) {
-      return 'Chua nap GEMINI_API_KEY vao ban chay hien tai. Hay dung '
-          '.\\scripts\\run_with_gemini.ps1 hoac chay flutter run '
-          '--dart-define-from-file=.env.local, sau do khoi dong lai app.';
+      return 'Chưa nạp GEMINI_API_KEY vào bản chạy hiện tại. Hãy dùng '
+          '.\\scripts\\run_with_gemini.ps1 hoặc chạy flutter run '
+          '--dart-define-from-file=.env.local, sau đó khởi động lại app.';
     }
 
     final dateAnswer = _answerCurrentDate(question);
@@ -41,7 +41,7 @@ class EventChatbotService {
       context = await _buildEventContext();
     } catch (_) {
       // Poki can still answer general questions if the event database is down.
-      context = 'Du lieu su kien tam thoi khong tai duoc.';
+      context = 'Dữ liệu sự kiện tạm thời không tải được.';
     }
     final prompt = _buildPrompt(
       question: question,
@@ -79,11 +79,11 @@ class EventChatbotService {
           .timeout(_requestTimeout);
     } on TimeoutException {
       throw const EventChatbotException(
-        'Poki chua nhan duoc phan hoi. Vui long thu lai sau it phut.',
+        'Poki chưa nhận được phản hồi. Vui lòng thử lại sau ít phút.',
       );
     } on http.ClientException {
       throw const EventChatbotException(
-        'Khong the ket noi den dich vu AI. Hay kiem tra mang va thu lai.',
+        'Không thể kết nối đến dịch vụ AI. Hãy kiểm tra mạng và thử lại.',
       );
     }
 
@@ -94,7 +94,7 @@ class EventChatbotService {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final candidates = data['candidates'] as List<dynamic>? ?? [];
     if (candidates.isEmpty) {
-      return 'Minh chua nhan duoc cau tra loi tu Gemini.';
+      return 'Mình chưa nhận được câu trả lời từ Gemini.';
     }
 
     final content = candidates.first['content'] as Map<String, dynamic>? ?? {};
@@ -105,7 +105,7 @@ class EventChatbotService {
         .join('\n')
         .trim();
 
-    return text.isEmpty ? 'Minh chua co cau tra loi phu hop.' : text;
+    return text.isEmpty ? 'Mình chưa có câu trả lời phù hợp.' : text;
   }
 
   Future<String> _buildEventContext() async {
@@ -125,7 +125,7 @@ class EventChatbotService {
     ''').order('start_date', ascending: true).limit(20);
 
     if (events.isEmpty) {
-      return 'Hien chua co du lieu su kien trong he thong.';
+      return 'Hiện chưa có dữ liệu sự kiện trong hệ thống.';
     }
 
     final buffer = StringBuffer();
@@ -209,17 +209,17 @@ $question
     }
     final formatted =
         DateFormat('EEEE, dd/MM/yyyy', 'vi').format(DateTime.now());
-    return 'Hom nay la $formatted.';
+    return 'Hôm nay là $formatted.';
   }
 
   String _messageForStatus(int statusCode) {
     if (statusCode == 400 || statusCode == 403) {
-      return 'Cau hinh Gemini chua hop le. Hay kiem tra API key va quyen truy cap model.';
+      return 'Cấu hình Gemini chưa hợp lệ. Hãy kiểm tra API key và quyền truy cập model.';
     }
     if (statusCode == 429) {
-      return 'Poki dang nhan qua nhieu yeu cau. Vui long thu lai sau it phut.';
+      return 'Poki đang nhận quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.';
     }
-    return 'Dich vu AI dang tam thoi khong phan hoi. Vui long thu lai sau.';
+    return 'Dịch vụ AI đang tạm thời không phản hồi. Vui lòng thử lại sau.';
   }
 }
 

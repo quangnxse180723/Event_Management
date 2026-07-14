@@ -62,9 +62,9 @@ class _StudentHomeDynamicState extends State<StudentHomeDynamic> {
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        backgroundColor: Colors.white,
-        selectedItemColor: Colors.green[700],
-        unselectedItemColor: Colors.grey[600],
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -240,9 +240,9 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.grey.shade200,
+                            color: Theme.of(context).colorScheme.secondaryContainer,
                           ),
-                          child: Icon(Icons.settings, color: Colors.black87),
+                          child: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSecondaryContainer),
                         ),
                       ),
                     ),
@@ -261,7 +261,7 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                   child: Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(color: Colors.black12, blurRadius: 4),
@@ -291,7 +291,7 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                   child: Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(color: Colors.black12, blurRadius: 4),
@@ -371,7 +371,7 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                 width: double.infinity,
                 padding: EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
                 ),
@@ -388,7 +388,6 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
-                              color: Colors.black87,
                             ),
                           ),
                           SizedBox(height: 2),
@@ -429,7 +428,6 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                                 return 'Thời gian: ' + rawDate.split('T')[0];
                               }
                             })(),
-                            style: TextStyle(color: Colors.black87),
                           ),
                         ],
                       ),
@@ -449,7 +447,7 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                   child: Container(
                     padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 255, 255, 255),
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(color: Colors.black12, blurRadius: 4),
@@ -584,7 +582,9 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                                   alignment: Alignment.center,
                                   child: Text(
                                     '${day.day}',
-                                    style: TextStyle(color: Colors.black87),
+                                    style: TextStyle(
+                                      color: Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87,
+                                    ),
                                   ),
                                 );
                               }

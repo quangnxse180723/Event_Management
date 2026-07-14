@@ -23,7 +23,7 @@ class AuthService {
     );
     final authUser = response.user;
     if (authUser == null) {
-      throw Exception('Dang nhap that bai. Kiem tra lai email va mat khau.');
+      throw Exception('Đăng nhập thất bại. Kiểm tra lại email và mật khẩu.');
     }
 
     final userData = await _supabase
@@ -32,7 +32,7 @@ class AuthService {
         .eq('auth_id', authUser.id)
         .maybeSingle();
     if (userData == null) {
-      throw Exception('Khong tim thay profile nguoi dung trong he thong.');
+      throw Exception('Không tìm thấy profile người dùng trong hệ thống.');
     }
 
     final studentData = await _supabase
@@ -69,7 +69,7 @@ class AuthService {
       data: metadata,
     );
     final authUser = response.user;
-    if (authUser == null) throw Exception('Dang ky that bai.');
+    if (authUser == null) throw Exception('Đăng ký thất bại.');
 
     // The database trigger creates the profile even if email confirmation is on.
     if (response.session == null) {
@@ -168,7 +168,7 @@ class AuthService {
 
   Future<bool> verifyCurrentPassword(String password) async {
     final user = _supabase.auth.currentUser;
-    if (user?.email == null) throw Exception('Nguoi dung chua dang nhap.');
+    if (user?.email == null) throw Exception('Người dùng chưa đăng nhập.');
     await _supabase.auth
         .signInWithPassword(email: user!.email!, password: password);
     return true;
@@ -176,7 +176,7 @@ class AuthService {
 
   Future<void> updateUserPassword(String newPassword) async {
     if (_supabase.auth.currentUser == null) {
-      throw Exception('Nguoi dung chua dang nhap.');
+      throw Exception('Người dùng chưa đăng nhập.');
     }
     await _supabase.auth.updateUser(UserAttributes(password: newPassword));
   }
