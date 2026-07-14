@@ -6,6 +6,10 @@ import '../widgets/home_screen.dart';
 import '../screen/sign_up_screen.dart';
 import '../services/notification_service.dart';
 import '../widgets/main_layout.dart';
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../screen/update_password_screen.dart';
+import '../main.dart'; // Import để lấy biến isPasswordRecoveryEvent
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +24,42 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   bool _loading = false;
   bool _obscureText = true;
+  StreamSubscription<AuthState>? _authStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Kiểm tra xem có sự kiện recovery từ lúc app khởi động không
+    if (isPasswordRecoveryEvent) {
+      isPasswordRecoveryEvent = false; // Reset cờ
+      Future.delayed(Duration.zero, () {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const UpdatePasswordScreen()),
+        );
+      });
+    }
+
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      // Debug: Hiển thị trạng thái để xem event nào đang được bắn ra
+      print("Supabase Auth Event: $event");
+      
+      if (event == AuthChangeEvent.passwordRecovery) {
+        Future.delayed(Duration.zero, () {
+          if (!mounted) return;
+          try {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const UpdatePasswordScreen()),
+            );
+          } catch (e) {
+            print("Lỗi chuyển trang: $e");
+          }
+        });
+      }
+    });
+  }
 
   Future<void> _handleLogin() async {
     setState(() => _loading = true);
@@ -71,8 +111,73 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _showForgotPasswordDialog() async {
+    final emailCtrl = TextEditingController(text: _emailController.text);
+    bool isSending = false;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Quên mật khẩu'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Nhập email của bạn để nhận liên kết đặt lại mật khẩu:'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          final email = emailCtrl.text.trim();
+                          if (email.isEmpty) {
+                            NotificationService.showError(context, 'Vui lòng nhập email');
+                            return;
+                          }
+                          setState(() => isSending = true);
+                          try {
+                            await _authService.resetPassword(email);
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            NotificationService.showSuccess(
+                                context, 'Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.');
+                          } catch (e) {
+                            setState(() => isSending = false);
+                            if (mounted) NotificationService.showError(context, e.toString());
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Text('Gửi'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
+    _authStateSubscription?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -153,7 +258,17 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 40),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _showForgotPasswordDialog,
+              child: const Text(
+                'Quên mật khẩu?',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           _loading
               ? const Center(child: CircularProgressIndicator())
               : SizedBox(

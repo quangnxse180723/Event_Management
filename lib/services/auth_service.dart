@@ -77,6 +77,19 @@ class AuthService {
     };
   }
 
+  // HÀM MỚI: Quên mật khẩu
+  Future<void> resetPassword(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'io.supabase.eventapp://login-callback/',
+      );
+    } catch (e) {
+      print('Lỗi khi gửi email đặt lại mật khẩu: $e');
+      throw Exception('Không thể gửi yêu cầu đặt lại mật khẩu. Vui lòng kiểm tra lại email.');
+    }
+  }
+
   /// Đăng xuất
   Future<void> signOut() async {
     await _supabase.auth.signOut();
