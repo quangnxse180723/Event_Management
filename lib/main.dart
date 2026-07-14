@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'theme_provider.dart';
 import 'screen/login_screen.dart';
 import 'app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
 import 'services/notification_service.dart';
 
