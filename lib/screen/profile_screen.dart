@@ -41,13 +41,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchData() async {
     final supabase = Supabase.instance.client;
     try {
-      // Lấy danh sách trường
       final universityList = await supabase
           .from('university')
           .select('university_id, name')
           .order('name');
 
-      // Lấy hồ sơ student theo user_id
+      if (mounted) {
+        setState(() {
+          _universities = List<Map<String, dynamic>>.from(universityList);
+        });
+      }
+
       final data = await supabase
           .from('student')
           .select('student_id, name, student_code, phone, university_id')
@@ -56,9 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .limit(1)
           .maybeSingle();
 
-      setState(() {
-        _universities = List<Map<String, dynamic>>.from(universityList);
-      });
+      if (!mounted) return;
 
       if (data == null) {
         setState(() {
@@ -74,13 +76,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nameController.text = data['name'] ?? '';
         _studentCodeController.text = data['student_code'] ?? '';
         _phoneController.text = data['phone'] ?? '';
-        _universityId = data['university_id'] as int?;
+
+        if (data['university_id'] != null) {
+          int? fetchedUniId = int.tryParse(data['university_id'].toString());
+          if (_universities.any((uni) => int.tryParse(uni['university_id'].toString()) == fetchedUniId)) {
+            _universityId = fetchedUniId;
+          }
+        }
+
         _isNew = false;
         _loading = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
-      NotificationService.showError(context, 'Lỗi tải dữ liệu: $e');
+      if (mounted) {
+        setState(() => _loading = false);
+        NotificationService.showError(context, 'Lỗi tải dữ liệu: $e');
+      }
     }
   }
 
@@ -92,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final phone = _phoneController.text.trim();
 
     if (name.isEmpty || studentCode.isEmpty || phone.isEmpty) {
-      NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông跨 tin');
+      NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông tin');
       return;
     }
     if (_universityId == null) {
@@ -100,33 +111,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    setState(() => _loading = true);
+
     try {
+      // ✅ TỰ ĐỘNG LẤY EMAIL CỦA TÀI KHOẢN ĐANG ĐĂNG NHẬP
+      final currentUser = supabase.auth.currentUser;
+      final userEmail = currentUser?.email ?? '';
+
       if (_isNew) {
-        // Insert mới
         final inserted = await supabase
             .from('student')
             .insert({
           'user_id': widget.userId,
+          'email': userEmail, // THÊM EMAIL VÀO ĐÂY ĐỂ TRÁNH LỖI NOT NULL
           'name': name,
           'student_code': studentCode,
           'phone': phone,
           'university_id': _universityId,
         })
             .select('student_id')
-            .single();
+            .maybeSingle();
 
-        setState(() {
-          _studentId = inserted['student_id'] as int?;
-          _isNew = false;
-          _editing = false;
-        });
+        if (inserted == null) {
+          throw Exception('Không thể tạo hồ sơ.');
+        }
 
-        NotificationService.showSuccess(context, '🎉 Tạo hồ sơ thành công!');
+        if (mounted) {
+          setState(() {
+            _studentId = inserted['student_id'] as int?;
+            _isNew = false;
+            _editing = false;
+          });
+          NotificationService.showSuccess(context, '🎉 Tạo hồ sơ thành công!');
+        }
       } else {
-        // Update theo student_id
+        if (_studentId == null) throw Exception('Lỗi: Không tìm thấy ID Sinh viên.');
+
         final updated = await supabase
             .from('student')
             .update({
+          'email': userEmail, // CẬP NHẬT CẢ EMAIL NẾU CẦN
           'name': name,
           'student_code': studentCode,
           'phone': phone,
@@ -135,33 +159,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .eq('student_id', _studentId!)
             .select('student_id');
 
-        if (updated.isEmpty) {
-          NotificationService.showError(context, 'Không tìm thấy hồ sơ để cập nhật');
-          return;
+        if (mounted) {
+          if (updated.isEmpty) {
+            NotificationService.showError(context, 'Không tìm thấy hồ sơ để cập nhật');
+          } else {
+            setState(() => _editing = false);
+            NotificationService.showSuccess(context, '✅ Cập nhật hồ sơ thành công!');
+          }
         }
-
-        setState(() {
-          _editing = false;
-        });
-
-        NotificationService.showSuccess(context, '✅ Cập nhật hồ sơ thành công!');
       }
     } catch (e) {
-      NotificationService.showError(context, 'Lưu thất bại: $e');
+      if (mounted) NotificationService.showError(context, 'Lưu thất bại: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return MainLayout(
       useScrollView: true,
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text(
           "Thông tin cá nhân",
           style: TextStyle(fontWeight: FontWeight.w600),
@@ -169,17 +188,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      floatingActionButton: !_editing
+      floatingActionButton: (!_loading && !_editing)
           ? FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _editing = true;
-          });
-        },
+        onPressed: () => setState(() => _editing = true),
         child: const Icon(Icons.edit),
       )
           : null,
-      child: Padding(
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Column(
           children: [
@@ -207,10 +224,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Trường đại học'),
               items: _universities.map((uni) {
+                final int uniId = int.tryParse(uni['university_id'].toString()) ?? 0;
                 return DropdownMenuItem<int>(
-                  value: uni['university_id'] as int,
+                  value: uniId,
                   child: Text(
-                    uni['name'] ?? '',
+                    uni['name']?.toString() ?? '',
                     overflow: TextOverflow.ellipsis,
                   ),
                 );

@@ -14,7 +14,7 @@ class QRScannerScreen extends StatefulWidget {
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   bool _isProcessing = false;
-  bool _isNavigating = false; // ✅ Cờ ngăn chặn lỗi Double Pop (Thoát 2 lần)
+  bool _isNavigating = false; // Cờ ngăn chặn lỗi Double Pop
   final MobileScannerController _controller = MobileScannerController();
 
   Future<Map<String, int>> _getStudentInfo() async {
@@ -47,7 +47,12 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     _isProcessing = true;
 
     try {
+      // Try-catch bọc riêng phần decode để tránh sập app nếu quét nhầm mã QR văn bản thường
       final data = jsonDecode(rawValue);
+      if (!data.containsKey('session_id')) {
+        throw Exception('Mã QR không đúng định dạng của hệ thống');
+      }
+
       final int sessionId = data['session_id'];
       final info = await _getStudentInfo();
 
@@ -78,27 +83,45 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       if (mounted) {
         NotificationService.showSuccess(
           context,
-          "🎉 Điểm danh thành công! Cảm ơn bạn đã tham gia.",
+          "🎉 Điểm danh thành công!",
         );
 
-        _isNavigating = true; // Khóa điều hướng để user không bấm Back giữa chừng được nữa
+        // Khóa điều hướng để user không bấm Back giữa chừng
+        _isNavigating = true;
 
-        // ✅ Tắt camera an toàn trước khi pop để tránh crash ngầm
+        // Tắt camera an toàn trước khi pop để tránh crash native
         await _controller.stop();
 
-        await Future.delayed(const Duration(milliseconds: 1500));
+        // Delay một chút để người dùng kịp đọc thông báo thành công
+        await Future.delayed(const Duration(milliseconds: 1000));
 
-        // ✅ Kiểm tra canPop để tuyệt đối không bao giờ pop nhầm Navigator root
+        // Kiểm tra canPop để tuyệt đối không bao giờ pop nhầm Navigator root
         if (mounted && Navigator.canPop(context)) {
           Navigator.pop(context);
         }
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, "❌ Lỗi khi quét mã QR: $e");
+        NotificationService.showError(context, "❌ Mã QR không hợp lệ hoặc lỗi kết nối.");
       }
     } finally {
-      _isProcessing = false;
+      // Đặt trong cờ điều hướng để tránh mở khóa lặp lại khi đã quét xong
+      if (!_isNavigating) {
+        _isProcessing = false;
+      }
+    }
+  }
+
+  // Hàm xử lý thoát an toàn tập trung (Dùng chung cho cả nút Back UI và nút Back vật lý)
+  Future<void> _safePop() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
+    // Dừng camera dứt điểm trước khi đóng giao diện
+    await _controller.stop();
+
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
     }
   }
 
@@ -110,88 +133,87 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
-      useScrollView: false,
-      appBar: AppBar(
-        // ✅ Quản lý nút Back thủ công để dọn dẹp bộ nhớ an toàn nếu user tự bấm thoát
-        leading: Navigator.canPop(context) ? IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () async {
-            if (_isNavigating) return;
-            _isNavigating = true;
-            await _controller.stop();
-            if (mounted && Navigator.canPop(context)) {
-              Navigator.pop(context);
-            }
-          },
-        ) : null,
-        title: const Text(
-          "Quét mã QR",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+    // WillPopScope chặn nút Back cứng của điện thoại, ép hệ thống chạy qua hàm _safePop()
+    // Lưu ý: Nếu đang dùng Flutter 3.16+, có thể thay WillPopScope bằng PopScope
+    return WillPopScope(
+      onWillPop: () async {
+        await _safePop();
+        return false; // Ngăn hệ thống tự pop mặc định
+      },
+      child: MainLayout(
+        useScrollView: false,
+        appBar: AppBar(
+          leading: Navigator.canPop(context) ? IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: _safePop,
+          ) : null,
+          title: const Text(
+            "Quét mã QR",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Camera Scanner
-          MobileScanner(
-            controller: _controller,
-            errorBuilder: (BuildContext context, MobileScannerException error) {
-              return const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.videocam_off, color: Colors.white, size: 48),
-                    SizedBox(height: 16),
-                    Text(
-                      'Không thể truy cập Camera.\nVui lòng cấp quyền trong Cài đặt hệ thống.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ],
-                ),
-              );
-            },
-            onDetect: (barcodeCapture) {
-              final barcode = barcodeCapture.barcodes.first;
-              if (barcode.rawValue != null && !_isProcessing) {
-                _handleBarcode(barcode.rawValue!);
-              }
-            },
-          ),
-
-          // Overlay khung quét
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.white.withOpacity(0.8),
-                width: 3,
-              ),
-              borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Camera Scanner
+            MobileScanner(
+              controller: _controller,
+              errorBuilder: (BuildContext context, MobileScannerException error) {
+                return const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.videocam_off, color: Colors.white, size: 48),
+                      SizedBox(height: 16),
+                      Text(
+                        'Không thể truy cập Camera.\nVui lòng cấp quyền trong Cài đặt hệ thống.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              onDetect: (barcodeCapture) {
+                final barcode = barcodeCapture.barcodes.first;
+                if (barcode.rawValue != null && !_isProcessing) {
+                  _handleBarcode(barcode.rawValue!);
+                }
+              },
             ),
-            width: 250,
-            height: 250,
-          ),
 
-          // Text hướng dẫn
-          Positioned(
-            bottom: 40,
-            child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            // Overlay khung quét
+            Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.8),
+                  width: 3,
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: const Text(
-                "Đưa mã QR vào khung để quét",
-                style: TextStyle(color: Colors.white, fontSize: 16),
+              width: 250,
+              height: 250,
+            ),
+
+            // Text hướng dẫn
+            Positioned(
+              bottom: 40,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  "Đưa mã QR vào khung để quét",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
