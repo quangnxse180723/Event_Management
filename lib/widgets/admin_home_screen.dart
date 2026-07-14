@@ -10,6 +10,7 @@ import '../screen/SessionListScreen.dart';
 import '../screen/event_chatbot_screen.dart';
 import '../screen/university_management_screen.dart'; // Nhập từ main
 import '../screen/user_management_screen.dart';       // Nhập từ main
+import 'notification_bell.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ADMIN
@@ -193,17 +194,28 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Xin chào,',
-            style: TextStyle(fontSize: 18, color: Theme.of(context).textTheme.bodyLarge?.color),
-          ),
-          Text(
-            'Admin',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).textTheme.titleLarge?.color,
-            ),
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Xin chào,',
+                    style: TextStyle(fontSize: 18, color: Theme.of(context).textTheme.bodyLarge?.color),
+                  ),
+                  Text(
+                    'Admin',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              NotificationBell(userId: widget.userId),
+            ],
           ),
           const SizedBox(height: 24),
           // Thay đổi từ nhánh main: Có 5 nút trong GridView
@@ -220,10 +232,19 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 _eventCount,
                 Icons.event,
                 Colors.blue,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => EventManagementScreen(role: widget.role, userId: widget.userId)),
-                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventManagementScreen(
+                        role: widget.role,
+                        userId: widget.userId,
+                      ),
+                    ),
+                  ).then((_) {
+                    _loadData();
+                  });
+                },
               ),
               _buildStatCard(
                 'Sinh viên',

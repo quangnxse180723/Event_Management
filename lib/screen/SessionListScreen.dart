@@ -12,29 +12,15 @@ class SessionListScreen extends StatefulWidget {
 }
 
 class _SessionListScreenState extends State<SessionListScreen> {
-  late final Future<List<Map<String, dynamic>>> _sessionsFuture;
+  late final Stream<List<Map<String, dynamic>>> _sessionsStream;
 
   @override
   void initState() {
     super.initState();
-    _sessionsFuture = _fetchSessions();
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchSessions() async {
-    try {
-      final response = await Supabase.instance.client
-          .from('event_session')
-          .select('session_id, title, start_time, location')
-          .order('start_time', ascending: false);
-      return response;
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải danh sách phiên: $e')),
-        );
-      }
-      rethrow;
-    }
+    _sessionsStream = Supabase.instance.client
+        .from('event_session')
+        .stream(primaryKey: ['session_id'])
+        .order('start_time', ascending: false);
   }
 
   void _showOptions(BuildContext context, Map<String, dynamic> session) {
@@ -90,11 +76,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
   Widget build(BuildContext context) {
     return MainLayout(
       useScrollView: false,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.white,
-        onPressed: () => setState(() => _sessionsFuture = _fetchSessions()),
-        child: const Icon(Icons.refresh, color: Colors.blue),
-      ),
+      floatingActionButton: null, // Bỏ nút refresh đi vì đã dùng Stream (Realtime)
       appBar: AppBar(
         title: const Text(
           "Chọn phiên để điểm danh",
@@ -106,17 +88,12 @@ class _SessionListScreenState extends State<SessionListScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.canPop(context)) Navigator.pop(context);
-          },
-        ),
+        automaticallyImplyLeading: false, // Ẩn nút back
       ),
 
       // 🔹 Nội dung chính
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _sessionsFuture,
+      child: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _sessionsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.white));

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../widgets/main_layout.dart'; // MainLayout dùng gradient background
+import '../services/notification_service.dart';
 
 class StudentEventSessionListScreen extends StatefulWidget {
   final int eventId;
@@ -46,6 +47,24 @@ class _StudentEventSessionListScreenState
       final checkins = session['session_checkin'] as List<dynamic>? ?? [];
       final checkedIn =
       checkins.any((c) => c['student_id'] == widget.studentId);
+
+      // Schedule reminder if start time is in the future
+      if (session['start_time'] != null) {
+        try {
+          final startTime = DateTime.parse(session['start_time']);
+          final reminderTime = startTime.subtract(const Duration(minutes: 30));
+          if (reminderTime.isAfter(DateTime.now())) {
+            NotificationService.scheduleEventReminder(
+              session['session_id'],
+              'Nhắc nhở sự kiện: ${widget.eventTitle}',
+              'Phiên "${session['title']}" sẽ bắt đầu lúc ${DateFormat('HH:mm').format(startTime)} tại ${session['location'] ?? "chưa rõ"}',
+              reminderTime,
+            );
+          }
+        } catch (e) {
+          print('Error scheduling notification: $e');
+        }
+      }
 
       return {
         ...session,

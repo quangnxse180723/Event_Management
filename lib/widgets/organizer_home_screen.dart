@@ -9,6 +9,7 @@ import '../screen/settings_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import '../screen/organizer_profile_screen.dart'; // ✅ ĐÃ THÊM IMPORT MÀN HÌNH PROFILE
 import 'main_layout.dart';
+import 'notification_bell.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ORGANIZER
@@ -245,9 +246,9 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ ĐÃ THÊM LOGIC ĐIỀU HƯỚNG SANG PROFILE TẠI ĐÂY
+          // Lời chào (từ AdminHomeScreen)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // mainAxisAlignment: MainAxisAlignment.spaceBetween, // Spacer takes care of this
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,6 +269,9 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                   ),
                 ],
               ),
+              const Spacer(),
+              NotificationBell(userId: widget.userId),
+              const SizedBox(width: 12),
               // Nút bấm Avatar chuyển hướng
               InkWell(
                 onTap: () {
@@ -310,15 +314,19 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 _eventCount,
                 Icons.event,
                 Colors.blue,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventManagementScreen(
-                      role: widget.role,
-                      userId: widget.userId,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventManagementScreen(
+                        role: widget.role,
+                        userId: widget.userId,
+                      ),
                     ),
-                  ),
-                ),
+                  ).then((_) {
+                    _loadData();
+                  });
+                },
               ),
               _buildStatCard(
                 'SV tham gia',

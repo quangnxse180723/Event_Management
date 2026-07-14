@@ -1,4 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:excel/excel.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../services/SessionCheckInService.dart';
 import '../services/notification_service.dart';
 import '../widgets/main_layout.dart'; // ✅ Layout có gradient + sóng
@@ -50,6 +55,49 @@ class _ManualCheckinScreenState extends State<ManualCheckinScreen> {
     }
   }
 
+  Future<void> _exportToExcel(List<Map<String, dynamic>> students) async {
+    try {
+      var excel = Excel.createExcel();
+      var sheet = excel['Sheet1'];
+
+      // Add headers
+      sheet.appendRow([
+        TextCellValue('STT'),
+        TextCellValue('Mã Sinh Viên'),
+        TextCellValue('Tên Sinh Viên'),
+        TextCellValue('Trạng thái')
+      ]);
+
+      // Add data
+      for (int i = 0; i < students.length; i++) {
+        final s = students[i];
+        sheet.appendRow([
+          TextCellValue('${i + 1}'),
+          TextCellValue(s['student_code']?.toString() ?? ''),
+          TextCellValue(s['student_name']?.toString() ?? ''),
+          TextCellValue(s['checkin_status']?.toString() ?? 'Chưa Check-in')
+        ]);
+      }
+
+      final directory = await getTemporaryDirectory();
+      final filePath = '${directory.path}/DiemDanh_Phien_${widget.sessionId}.xlsx';
+      final file = File(filePath);
+      
+      final fileBytes = excel.save();
+      if (fileBytes != null) {
+        await file.writeAsBytes(fileBytes);
+        
+        // Share file
+        await Share.shareXFiles(
+          [XFile(filePath)],
+          text: 'Danh sách điểm danh phiên ${widget.sessionId}',
+        );
+      }
+    } catch (e) {
+      if (mounted) NotificationService.showError(context, 'Lỗi xuất Excel: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -61,6 +109,18 @@ class _ManualCheckinScreenState extends State<ManualCheckinScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _attendanceListFuture,
+              builder: (context, snapshot) {
+                return IconButton(
+                  icon: const Icon(Icons.download),
+                  tooltip: 'Xuất Excel',
+                  onPressed: snapshot.hasData && snapshot.data!.isNotEmpty
+                      ? () => _exportToExcel(snapshot.data!)
+                      : null,
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               tooltip: 'Làm mới danh sách',

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum NotificationType {
   success,
@@ -10,6 +14,88 @@ enum NotificationType {
 class NotificationService {
   static OverlayEntry? _overlayEntry;
   static bool _isShowing = false;
+
+  // Flutter Local Notifications Plugin
+  static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static Future<void> initLocalNotifications() async {
+    tz.initializeTimeZones();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings =
+        const InitializationSettings(android: initializationSettingsAndroid);
+    await _localNotificationsPlugin.initialize(settings: initializationSettings);
+  }
+
+  static void initRealtimeListener() {
+    Supabase.instance.client
+        .channel('public:event')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'event',
+            callback: (payload) {
+              final newEvent = payload.newRecord;
+              if (newEvent != null) {
+                final title = newEvent['title'] ?? 'Sự kiện mới';
+                showLocalNotification('Sự kiện mới!', title.toString());
+              }
+            })
+        .subscribe();
+  }
+
+  static Future<void> showLocalNotification(String title, String body) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'event_channel_id',
+      'Sự kiện mới',
+      channelDescription: 'Thông báo về sự kiện mới',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: false,
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    await _localNotificationsPlugin.show(
+      id: DateTime.now().millisecond,
+      title: title,
+      body: body,
+      notificationDetails: platformChannelSpecifics,
+    );
+  }
+
+  static Future<void> scheduleEventReminder(
+      int id, String title, String body, DateTime scheduledTime) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'reminder_channel_id',
+      'Nhắc nhở sự kiện',
+      channelDescription: 'Nhắc nhở trước khi sự kiện bắt đầu',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    final scheduledDate = tz.TZDateTime.from(scheduledTime, tz.local);
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
+      return; // Cannot schedule in the past
+    }
+
+    await _localNotificationsPlugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  static Future<void> cancelScheduledNotification(int id) async {
+    await _localNotificationsPlugin.cancel(id: id);
+  }
 
   /// Hiển thị thông báo thành công
   static void showSuccess(BuildContext context, String message) {

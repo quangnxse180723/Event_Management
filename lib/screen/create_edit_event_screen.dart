@@ -109,6 +109,10 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       NotificationService.showWarning(context, 'Vui lòng chọn ngày bắt đầu và kết thúc');
       return;
     }
+    if (_endDate!.isBefore(_startDate!) || _endDate!.isAtSameMomentAs(_startDate!)) {
+      NotificationService.showWarning(context, 'Ngày kết thúc phải sau ngày bắt đầu');
+      return;
+    }
     if (widget.role == 'admin' && _selectedOrganizerId == null) {
       NotificationService.showWarning(context, 'Vui lòng chọn một Organizer để gán');
       return;

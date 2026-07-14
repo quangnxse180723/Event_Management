@@ -3,6 +3,8 @@ class StudentInEvent {
   final int eventId;
   final int studentId;
   final String status;
+  final int? rating;
+  final String? feedback;
   final Student? student;
   final Map<String, dynamic>? event;
 
@@ -11,6 +13,8 @@ class StudentInEvent {
     required this.eventId,
     required this.studentId,
     required this.status,
+    this.rating,
+    this.feedback,
     this.student,
     this.event,
   });
@@ -37,6 +41,8 @@ class StudentInEvent {
       eventId: eventIdVal,
       studentId: studentIdVal,
       status: (json['status'] ?? 'registered') as String,
+      rating: json['rating'] as int?,
+      feedback: json['feedback'] as String?,
       student: json['student'] != null
           ? Student.fromJson(Map<String, dynamic>.from(json['student']))
           : null,
@@ -50,6 +56,8 @@ class StudentInEvent {
       'event_id': eventId,
       'student_id': studentId,
       'status': status,
+      'rating': rating,
+      'feedback': feedback,
     };
   }
 

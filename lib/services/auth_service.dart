@@ -134,6 +134,19 @@ class AuthService {
     return List<Map<String, dynamic>>.from(data);
   }
 
+  // HÀM MỚI: Quên mật khẩu
+  Future<void> resetPassword(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'io.supabase.eventapp://login-callback/',
+      );
+    } catch (e) {
+      print('Lỗi khi gửi email đặt lại mật khẩu: $e');
+      throw Exception('Không thể gửi yêu cầu đặt lại mật khẩu. Vui lòng kiểm tra lại email.');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getCampuses(int universityId) async {
     final data = await _supabase
         .from('university_campus')

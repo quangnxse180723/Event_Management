@@ -8,12 +8,27 @@ import 'theme_provider.dart';
 import 'screen/login_screen.dart';
 import 'app_theme.dart';
 import 'supabase_config.dart';
+import 'services/notification_service.dart';
+
+// Biến toàn cục để bắt sự kiện đổi mật khẩu khi app đang tắt (cold start)
+bool isPasswordRecoveryEvent = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('vi_VN', null);
 
   await initSupabase();
+
+  // Initialize Local Notifications and Realtime listener
+  await NotificationService.initLocalNotifications();
+  NotificationService.initRealtimeListener();
+
+  // Lắng nghe ngay lập tức sau khi khởi tạo để không bị trượt mất sự kiện
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    if (data.event == AuthChangeEvent.passwordRecovery) {
+      isPasswordRecoveryEvent = true;
+    }
+  });
 
   runApp(
     ChangeNotifierProvider(

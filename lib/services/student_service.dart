@@ -12,8 +12,15 @@ class StudentService {
   /// -------------------------------
   /// CRUD cho student
   /// -------------------------------
-  Future<List<Student>> getStudents() async {
-    final response = await supabase.from(studentTable).select();
+  Future<List<Student>> getStudents({String? searchQuery, int limit = 15, int offset = 0}) async {
+    var query = supabase.from(studentTable).select();
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      query = query.ilike('name', '%$searchQuery%');
+    }
+
+    final response = await query.range(offset, offset + limit - 1).order('name', ascending: true);
+
     return (response as List)
         .map((row) => Student.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -176,7 +183,10 @@ class StudentService {
     final response = await supabase
         .from(studentInEventTable)
         .select('''
+        student_in_event_id,
         status,
+        rating,
+        feedback,
         created_at,
         event:event_id (
           event_id,
