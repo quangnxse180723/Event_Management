@@ -7,6 +7,7 @@ import 'main_layout.dart';
 import 'package:student_attendance/screen/settings_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screen/SessionListScreen.dart';
+import 'notification_bell.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ADMIN
@@ -193,17 +194,28 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Xin chào,',
-            style: TextStyle(fontSize: 18, color: Colors.black),
-          ),
-          const Text(
-            'Admin',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Xin chào,',
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                  ),
+                  const Text(
+                    'Admin',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              NotificationBell(userId: widget.userId),
+            ],
           ),
           const SizedBox(height: 24),
           GridView.count(
@@ -219,15 +231,19 @@ class _AdminHomeContentState extends State<_AdminHomeContent> {
                 _eventCount,
                 Icons.event,
                 Colors.blue,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventManagementScreen(
-                      role: widget.role,
-                      userId: widget.userId,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventManagementScreen(
+                        role: widget.role,
+                        userId: widget.userId,
+                      ),
                     ),
-                  ),
-                ),
+                  ).then((_) {
+                    _loadData();
+                  });
+                },
               ),
               _buildStatCard(
                 'Sinh viên',

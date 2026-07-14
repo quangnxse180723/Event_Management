@@ -60,6 +60,22 @@ class StudentInEventService {
     }
   }
 
+  /// Gửi đánh giá và phản hồi cho sự kiện
+  Future<void> submitRating(int studentInEventId, int rating, String feedback) async {
+    try {
+      await _supabase
+          .from(_tableName)
+          .update({
+            'rating': rating,
+            'feedback': feedback,
+          })
+          .eq(_idColumn, studentInEventId);
+    } catch (e) {
+      print('Lỗi khi gửi đánh giá: $e');
+      throw Exception('Không thể gửi đánh giá.');
+    }
+  }
+
   /// Thêm một sinh viên vào sự kiện bằng student_code
   Future<StudentInEvent?> addStudentToEvent(int eventId, String studentCode) async {
     try {

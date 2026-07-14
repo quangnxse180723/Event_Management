@@ -183,7 +183,10 @@ class StudentService {
     final response = await supabase
         .from(studentInEventTable)
         .select('''
+        student_in_event_id,
         status,
+        rating,
+        feedback,
         created_at,
         event:event_id (
           event_id,

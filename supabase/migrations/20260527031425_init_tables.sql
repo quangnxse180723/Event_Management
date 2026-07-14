@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS public.student_in_event (
     event_id BIGINT REFERENCES public.event(event_id) ON DELETE CASCADE,
     student_id BIGINT REFERENCES public.student(student_id) ON DELETE CASCADE,
     status VARCHAR(50) DEFAULT 'registered',
+    rating INT DEFAULT 0,
+    feedback TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(event_id, student_id)
 );

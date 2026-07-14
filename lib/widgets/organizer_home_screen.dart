@@ -7,6 +7,7 @@ import '../screen/SessionListScreen.dart';
 import '../screen/settings_screen.dart';
 import '../screen/student_in_event_screen.dart';
 import 'main_layout.dart';
+import 'notification_bell.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ORGANIZER
@@ -237,19 +238,30 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Lời chào (từ AdminHomeScreen)
-          const Text(
-            'Xin chào,',
-            style: TextStyle(fontSize: 18, color: Colors.black),
-          ),
-          Text(
-            widget.role == 'organizer'
-                ? 'Tổ chức'
-                : 'Organizer', // Hiển thị vai trò
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Xin chào,',
+                    style: TextStyle(fontSize: 18, color: Colors.black),
+                  ),
+                  Text(
+                    widget.role == 'organizer'
+                        ? 'Tổ chức'
+                        : 'Organizer', // Hiển thị vai trò
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              NotificationBell(userId: widget.userId),
+            ],
           ),
           const SizedBox(height: 8),
 
@@ -268,15 +280,19 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 _eventCount,
                 Icons.event,
                 Colors.blue,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventManagementScreen(
-                      role: widget.role,
-                      userId: widget.userId,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EventManagementScreen(
+                        role: widget.role,
+                        userId: widget.userId,
+                      ),
                     ),
-                  ),
-                ),
+                  ).then((_) {
+                    _loadData();
+                  });
+                },
               ),
               _buildStatCard(
                 'SV tham gia',

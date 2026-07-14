@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:student_attendance/screen/student_event_session_list_screen.dart';
 import '../widgets/main_layout.dart';
 import '../services/student_service.dart';
+import '../services/student_in_event_service.dart';
 import '../services/notification_service.dart';
 
 class MyEventScreen extends StatefulWidget {
@@ -178,12 +179,23 @@ class _MyEventScreenState extends State<MyEventScreen> {
                         "Bắt đầu: ${_formatDate(event['start_date'])}   •   Kết thúc: ${_formatDate(event['end_date'])}",
                         style: const TextStyle(height: 1.5),
                       ),
-                      trailing: Chip(
-                        label: Text(
-                          trangThai,
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        backgroundColor: chipColor,
+                      trailing: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Chip(
+                            label: Text(
+                              trangThai,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            backgroundColor: chipColor,
+                            padding: EdgeInsets.zero,
+                          ),
+                          if (trangThai == 'Đã tham gia' || trangThai == 'Hoàn thành')
+                            InkWell(
+                              onTap: () => _showRatingDialog(context, ev),
+                              child: const Text('Đánh giá', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline, fontSize: 12)),
+                            )
+                        ],
                       ),
                       onTap: () async {
                         if (_studentId == null) {
@@ -210,6 +222,85 @@ class _MyEventScreenState extends State<MyEventScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showRatingDialog(BuildContext context, Map<String, dynamic> ev) {
+    int rating = ev['rating'] ?? 5;
+    String feedback = ev['feedback'] ?? '';
+    final studentInEventId = ev['student_in_event_id'];
+
+    if (studentInEventId == null) {
+      NotificationService.showError(context, "Không thể đánh giá sự kiện này");
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Đánh giá sự kiện'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            rating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    decoration: const InputDecoration(
+                      labelText: 'Ý kiến phản hồi',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (val) => feedback = val,
+                    controller: TextEditingController(text: feedback),
+                  )
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    try {
+                      await StudentInEventService().submitRating(studentInEventId, rating, feedback);
+                      if (context.mounted) {
+                        NotificationService.showSuccess(context, 'Cảm ơn bạn đã đánh giá!');
+                        _loadEvents(); // Reload to get updated rating
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        NotificationService.showError(context, e.toString());
+                      }
+                    }
+                  },
+                  child: const Text('Gửi'),
+                )
+              ],
+            );
+          }
+        );
+      }
     );
   }
 }
