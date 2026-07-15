@@ -179,7 +179,7 @@ class _EventListScreenState extends State<EventListScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
       ),
 
       // ✅ Nội dung chính
@@ -192,7 +192,7 @@ class _EventListScreenState extends State<EventListScreen> {
                 hintText: 'Tìm sự kiện...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
