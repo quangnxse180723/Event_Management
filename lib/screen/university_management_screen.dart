@@ -14,19 +14,67 @@ class _UniversityScreenState extends State<UniversityScreen> {
   List<University> universities = [];
   bool isLoading = true;
 
+  String _searchQuery = '';
+  int _offset = 0;
+  final int _limit = 15;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData(refresh: true);
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !_isLoadingMore && _hasMore) {
+        _loadData(refresh: false);
+      }
+    });
   }
 
-  Future<void> _loadData() async {
-    setState(() => isLoading = true);
-    final data = await UniversityService().fetchUniversities();
-    setState(() {
-      universities = data;
-      isLoading = false;
-    });
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData({bool refresh = false}) async {
+    if (refresh) {
+      setState(() {
+        isLoading = true;
+        _offset = 0;
+        _hasMore = true;
+        universities.clear();
+      });
+    } else {
+      setState(() => _isLoadingMore = true);
+    }
+
+    try {
+      final data = await UniversityService().fetchUniversities(
+        searchQuery: _searchQuery,
+        limit: _limit,
+        offset: _offset,
+      );
+      setState(() {
+        if (data.length < _limit) {
+          _hasMore = false;
+        }
+        universities.addAll(data);
+        _offset += data.length;
+        isLoading = false;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        _isLoadingMore = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu: $e')));
+      }
+    }
   }
 
   int _generateNewId() {
@@ -146,7 +194,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      _loadData();
+      _loadData(refresh: true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -171,49 +219,79 @@ class _UniversityScreenState extends State<UniversityScreen> {
         onPressed: () => _showForm(),
         child: const Icon(Icons.add),
       ),
-      useScrollView: true,
-      child: isLoading
-          ? SizedBox(
-        height: MediaQuery.of(context).size.height * 0.5,
-        child: const Center(child: CircularProgressIndicator()),
-      )
-          : Column(
-        children: universities.map((uni) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            // Thích ứng Dark/Light Mode cho Card
-            color: Theme.of(context).cardColor,
-            child: ListTile(
-              isThreeLine: true,
-              title: Text(
-                uni.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+      useScrollView: false, // ✅ Sử dụng false để dùng ListView
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm trường/đơn vị...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(uni.address ?? "Không có địa chỉ"),
-                  const SizedBox(height: 4),
-                  Text(uni.contactInfo ?? "Không có thông tin liên hệ"),
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _showForm(uni: uni),
-                  ),
-                  if (uni.universityId != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteUniversity(uni.universityId!),
-                    ),
-                ],
-              ),
+              onChanged: (value) {
+                _searchQuery = value.trim();
+                _loadData(refresh: true);
+              },
             ),
-          );
-        }).toList(),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(bottom: 90),
+                    itemCount: universities.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == universities.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final uni = universities[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          isThreeLine: true,
+                          title: Text(
+                            uni.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(uni.address ?? "Không có địa chỉ"),
+                              const SizedBox(height: 4),
+                              Text(uni.contactInfo ?? "Không có thông tin liên hệ"),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _showForm(uni: uni),
+                              ),
+                              if (uni.universityId != null)
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _deleteUniversity(uni.universityId!),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

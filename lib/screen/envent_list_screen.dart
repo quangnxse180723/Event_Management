@@ -17,14 +17,44 @@ class _EventListScreenState extends State<EventListScreen> {
   final StudentService _service = StudentService();
   List<Map<String, dynamic>> _events = [];
   bool _loading = true;
+  
+  String _searchQuery = '';
+  int _offset = 0;
+  final int _limit = 10;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    _loadEvents(refresh: true);
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !_isLoadingMore && _hasMore) {
+        _loadEvents(refresh: false);
+      }
+    });
   }
 
-  Future<void> _loadEvents() async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadEvents({bool refresh = false}) async {
+    if (refresh) {
+      setState(() {
+        _loading = true;
+        _offset = 0;
+        _hasMore = true;
+        _events.clear();
+      });
+    } else {
+      setState(() => _isLoadingMore = true);
+    }
+
     try {
       final now = DateTime.now().toIso8601String();
       final studentRow = await _service.supabase
@@ -42,7 +72,7 @@ class _EventListScreenState extends State<EventListScreen> {
 
       final studentId = studentRow['student_id'] as int;
 
-      final response = await _service.supabase
+      var query = _service.supabase
           .from('event')
           .select('''
             event_id,
@@ -51,8 +81,15 @@ class _EventListScreenState extends State<EventListScreen> {
             end_date,
             student_in_event(student_id)
           ''')
-          .gte('end_date', now)
-          .order('start_date');
+          .gte('end_date', now);
+
+      if (_searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$_searchQuery%');
+      }
+
+      final response = await query
+          .order('start_date')
+          .range(_offset, _offset + _limit - 1);
 
       final events = List<Map<String, dynamic>>.from(response);
 
@@ -62,13 +99,21 @@ class _EventListScreenState extends State<EventListScreen> {
       }
 
       setState(() {
-        _events = events;
+        if (events.length < _limit) {
+          _hasMore = false;
+        }
+        _events.addAll(events);
+        _offset += events.length;
         _loading = false;
+        _isLoadingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
       NotificationService.showError(context, "Lỗi tải sự kiện: $e");
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _isLoadingMore = false;
+      });
     }
   }
 
@@ -135,15 +180,45 @@ class _EventListScreenState extends State<EventListScreen> {
       ),
 
       // ✅ Nội dung chính
-      child: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _events.isEmpty
-          ? const Center(child: Text("Không có sự kiện nào sắp diễn ra."))
-          : ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _events.length,
-        itemBuilder: (context, index) {
-          final ev = _events[index];
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm sự kiện...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                _searchQuery = value.trim();
+                _loadEvents(refresh: true);
+              },
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _events.isEmpty
+                ? const Center(child: Text("Không có sự kiện nào sắp diễn ra."))
+                : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: _events.length + (_hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _events.length) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                
+                final ev = _events[index];
           return Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -167,6 +242,9 @@ class _EventListScreenState extends State<EventListScreen> {
             ),
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }

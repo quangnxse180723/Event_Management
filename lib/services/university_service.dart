@@ -57,9 +57,13 @@ class UniversityService {
     }
   }
 
-  Future<List<University>> fetchUniversities() async {
+  Future<List<University>> fetchUniversities({String? searchQuery, int limit = 15, int offset = 0}) async {
     try {
-      final data = await supabase.from('university').select();
+      var query = supabase.from('university').select();
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('name', '%$searchQuery%');
+      }
+      final data = await query.range(offset, offset + limit - 1).order('name', ascending: true);
       return (data as List)
           .map((json) => University.fromJson(json))
           .toList();

@@ -21,6 +21,14 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   List<Student> students = [];
   bool isLoading = true;
 
+  // Các biến tìm kiếm và phân trang
+  String _searchQuery = '';
+  int _offset = 0;
+  final int _limit = 15;
+  bool _hasMore = true;
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
+  
   // thêm map để chọn trường
   List<Map<String, dynamic>> _universities = [];
   bool _isUniversitiesLoading = true;
@@ -33,17 +41,57 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadStudents();
+    _loadStudents(refresh: true);
     _loadUniversities(); // <-- TẢI DANH SÁCH TRƯỜNG
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && !_isLoadingMore && _hasMore) {
+        _loadStudents(refresh: false);
+      }
+    });
   }
 
-  Future<void> _loadStudents() async {
-    setState(() => isLoading = true);
-    final data = await _studentService.getStudents();
-    setState(() {
-      students = data;
-      isLoading = false;
-    });
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadStudents({bool refresh = false}) async {
+    if (refresh) {
+      setState(() {
+        isLoading = true;
+        _offset = 0;
+        _hasMore = true;
+        students.clear();
+      });
+    } else {
+      setState(() => _isLoadingMore = true);
+    }
+
+    try {
+      final data = await _studentService.getStudents(
+        searchQuery: _searchQuery,
+        limit: _limit,
+        offset: _offset,
+      );
+
+      setState(() {
+        if (data.length < _limit) {
+          _hasMore = false;
+        }
+        students.addAll(data);
+        _offset += data.length;
+        isLoading = false;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        _isLoadingMore = false;
+      });
+      if (mounted) NotificationService.showError(context, "Lỗi tải dữ liệu: $e");
+    }
   }
 
   // --- HÀM MỚI (LẤY TRỰC TIẾP TỪ SUPABASE) ---
@@ -384,13 +432,43 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
         child: const Icon(Icons.add),
       ),
       useScrollView: false,
-      child: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-        padding: const EdgeInsets.only(top: 12.0, bottom: 90.0),
-        itemCount: students.length,
-        itemBuilder: (context, index) {
-          final s = students[index];
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm theo tên sinh viên...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) {
+                _searchQuery = value.trim();
+                _loadStudents(refresh: true);
+              },
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(top: 12.0, bottom: 90.0),
+                    itemCount: students.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == students.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      
+                      final s = students[index];
           return Card(
             color: Colors.white.withAlpha((255 * 0.9).round()),
             shadowColor:
@@ -446,6 +524,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
             ),
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }

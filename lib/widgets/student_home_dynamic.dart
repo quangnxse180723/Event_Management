@@ -10,6 +10,7 @@ import 'package:student_attendance/screen/event_chatbot_screen.dart';
 import 'package:student_attendance/screen/settings_screen.dart';
 
 import 'main_layout.dart';
+import 'notification_bell.dart';
 
 class StudentHomeDynamic extends StatefulWidget {
   final int userId;
@@ -221,7 +222,9 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 8),
+                    // Notification Bell
+                    NotificationBell(userId: widget.userId),
+                    const SizedBox(width: 8),
                     // Nút setting giữ nguyên
                     Material(
                       color: Colors.transparent,
