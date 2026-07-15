@@ -77,7 +77,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         'user_id': info['userId'],
         'student_id': info['studentId'],
         'method': 'QR',
-        'checkin_time': DateTime.now().toIso8601String(),
       });
 
       if (mounted) {

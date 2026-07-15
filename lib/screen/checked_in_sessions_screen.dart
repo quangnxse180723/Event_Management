@@ -36,7 +36,7 @@ class _CheckedInSessionsScreenState extends State<CheckedInSessionsScreen> {
 
     final checkins = await Supabase.instance.client
         .from('session_checkin')
-        .select('session_id, checkin_time')
+        .select('session_id, created_at')
         .eq('student_id', student['student_id']);
 
     if (checkins == null || checkins.isEmpty) return [];
@@ -53,7 +53,7 @@ class _CheckedInSessionsScreenState extends State<CheckedInSessionsScreen> {
         'title': session['title'],
         'start_time': session['start_time'],
         'location': session['location'],
-        'checkin_time': c['checkin_time'],
+        'checkin_time': c['created_at'],
       });
     }
     return result;
