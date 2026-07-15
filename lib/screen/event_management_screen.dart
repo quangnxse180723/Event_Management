@@ -210,6 +210,18 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                         'Từ ${DateFormat('dd/MM/yyyy').format(event.startDate)} '
                         'đến ${DateFormat('dd/MM/yyyy').format(event.endDate)}',
                   ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EventSessionManagementScreen(
+                          role: widget.role,
+                          userId: widget.userId,
+                          eventId: event.id,
+                        ),
+                      ),
+                    );
+                  },
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
