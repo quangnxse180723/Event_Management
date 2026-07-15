@@ -113,13 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
   String _readableError(Object error) {
     final message = error.toString().replaceFirst('Exception: ', '');
     if (message.contains('email_not_confirmed') || message.contains('Email not confirmed')) {
-      return 'Chưa xác thực Email.\nLỗi gốc: $message';
+      return 'Tài khoản chưa xác thực Email. Vui lòng kiểm tra hộp thư của bạn.';
     }
     if (message.contains('Invalid login credentials')) {
-      return 'Sai email hoặc mật khẩu.\nLỗi gốc: $message';
+      return 'Sai email hoặc mật khẩu.';
     }
-    return 'Lỗi: $message';
+    return 'Đã xảy ra lỗi hệ thống, vui lòng thử lại.';
   }
+
 
   Future<void> _showForgotPasswordDialog() async {
     final emailCtrl = TextEditingController(text: _emailController.text);
