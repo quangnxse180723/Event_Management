@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../services/student_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/main_layout.dart';
+import 'student_event_session_list_screen.dart';
 
 class EventListScreen extends StatefulWidget {
   final int userId;
@@ -24,6 +25,7 @@ class _EventListScreenState extends State<EventListScreen> {
   bool _hasMore = true;
   bool _isLoadingMore = false;
   final ScrollController _scrollController = ScrollController();
+  int? _studentId;
 
   @override
   void initState() {
@@ -70,7 +72,7 @@ class _EventListScreenState extends State<EventListScreen> {
         return;
       }
 
-      final studentId = studentRow['student_id'] as int;
+      _studentId = studentRow['student_id'] as int;
 
       var query = _service.supabase
           .from('event')
@@ -95,7 +97,7 @@ class _EventListScreenState extends State<EventListScreen> {
 
       for (var ev in events) {
         final regs = ev['student_in_event'] as List? ?? [];
-        ev['registered'] = regs.any((r) => r['student_id'] == studentId);
+        ev['registered'] = regs.any((r) => r['student_id'] == _studentId);
       }
 
       setState(() {
@@ -239,6 +241,22 @@ class _EventListScreenState extends State<EventListScreen> {
                 onPressed: () => _registerEvent(index, ev['event_id']),
                 child: const Text("Đăng ký"),
               ),
+              onTap: () {
+                if (_studentId == null) {
+                  NotificationService.showError(context, "Không tìm thấy mã sinh viên.");
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => StudentEventSessionListScreen(
+                      eventId: ev['event_id'],
+                      eventTitle: ev['title'],
+                      studentId: _studentId!,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
