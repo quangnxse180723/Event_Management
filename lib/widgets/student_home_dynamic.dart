@@ -158,9 +158,16 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
         .toSet();
 
     final attendedEvents = myEventsList.where((e) {
-      final status = e['status'] ?? '';
+      String status = (e['status'] ?? '').toString().toLowerCase();
       final eventId = e['event']?['event_id'];
-      return status == 'attended' || status == 'completed' || uniqueAttendedEventIds.contains(eventId);
+      
+      if (status == 'attended' && !uniqueAttendedEventIds.contains(eventId)) {
+        status = 'registered';
+      } else if (uniqueAttendedEventIds.contains(eventId) && status != 'completed') {
+        status = 'attended';
+      }
+      
+      return status == 'attended' || status == 'completed';
     }).toList();
     final now = DateTime.now();
     final upcoming = myEventsList.where((e) {
