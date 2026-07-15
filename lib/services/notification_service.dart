@@ -104,7 +104,35 @@ class NotificationService {
 
   /// Hiển thị thông báo lỗi
   static void showError(BuildContext context, String message) {
-    _showNotification(context, message, NotificationType.error);
+    _showNotification(context, _cleanMessage(message), NotificationType.error);
+  }
+
+  static String _cleanMessage(String message) {
+    if (message.contains('AuthApiException') || 
+        message.contains('PostgrestException') || 
+        message.contains('Exception:')) {
+      
+      if (message.contains('email_not_confirmed') || message.contains('Email not confirmed')) {
+        return 'Tài khoản chưa xác thực Email. Vui lòng kiểm tra hộp thư của bạn.';
+      }
+      if (message.contains('Invalid login credentials')) {
+        return 'Sai email hoặc mật khẩu.';
+      }
+      if (message.contains('duplicate key') || message.contains('already registered')) {
+        return 'Thông tin đã tồn tại trong hệ thống.';
+      }
+
+      final parts = message.split(RegExp(r'(AuthApiException|PostgrestException|Exception:)'));
+      if (parts.isNotEmpty && parts[0].trim().isNotEmpty) {
+        String prefix = parts[0].trim();
+        if (prefix.endsWith(':') || prefix.endsWith('-')) {
+          prefix = prefix.substring(0, prefix.length - 1).trim();
+        }
+        return '$prefix. Vui lòng thử lại sau.';
+      }
+      return 'Đã xảy ra lỗi hệ thống, vui lòng thử lại.';
+    }
+    return message;
   }
 
   /// Hiển thị thông báo cảnh báo
