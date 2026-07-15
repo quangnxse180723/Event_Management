@@ -243,19 +243,22 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Xin chào,', style: textTheme.bodyMedium),
-                    Text(
-                      studentName,
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Xin chào,', style: textTheme.bodyMedium),
+                      Text(
+                        studentName,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                Spacer(),
                 Row(
                   children: [
                     // Avatar tròn nền trong suốt
