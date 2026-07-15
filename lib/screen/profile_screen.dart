@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return MainLayout(
       useScrollView: true,
       appBar: AppBar(
-        leading: const BackButton(),
+        automaticallyImplyLeading: false,
         title: const Text(
           "Thông tin cá nhân",
           style: TextStyle(fontWeight: FontWeight.w600),
