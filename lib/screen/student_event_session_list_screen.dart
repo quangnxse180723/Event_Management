@@ -151,14 +151,28 @@ class _StudentEventSessionListScreenState
                               'Địa điểm: ${s['location'] ?? ""}',
                         ),
                         trailing: s['checked_in']
-                            ? Chip(
-                          label: const Text("Đã điểm danh"),
-                          backgroundColor: Colors.green.shade100,
-                        )
-                            : Chip(
-                          label: const Text("Chưa điểm danh"),
-                          backgroundColor: Colors.red.shade100,
-                        ),
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  "Đã điểm danh",
+                                  style: TextStyle(fontSize: 12, color: Colors.green[800], fontWeight: FontWeight.bold),
+                                ),
+                              )
+                            : Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  "Chưa điểm danh",
+                                  style: TextStyle(fontSize: 12, color: Colors.red[800], fontWeight: FontWeight.bold),
+                                ),
+                              ),
                       ),
                     );
                   },
