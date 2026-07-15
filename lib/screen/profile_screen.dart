@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/main_layout.dart';
 import '../services/notification_service.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final int userId;
@@ -15,14 +16,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _studentCodeController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _majorController = TextEditingController();
+
+  final _authService = AuthService();
 
   int? _universityId;
+  int? _campusId;
   int? _studentId;
   bool _loading = true;
   bool _isNew = false;
   bool _editing = false;
+  bool _loadingCampuses = false;
 
   List<Map<String, dynamic>> _universities = [];
+  List<Map<String, dynamic>> _campuses = [];
 
   @override
   void initState() {
@@ -35,6 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _studentCodeController.dispose();
     _phoneController.dispose();
+    _majorController.dispose();
     super.dispose();
   }
 
@@ -54,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final data = await supabase
           .from('student')
-          .select('student_id, name, student_code, phone, university_id')
+          .select('student_id, name, student_code, phone, university_id, campus_id, major')
           .eq('user_id', widget.userId)
           .order('created_at', ascending: false)
           .limit(1)
@@ -76,6 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nameController.text = data['name'] ?? '';
         _studentCodeController.text = data['student_code'] ?? '';
         _phoneController.text = data['phone'] ?? '';
+        _majorController.text = data['major'] ?? '';
 
         if (data['university_id'] != null) {
           int? fetchedUniId = int.tryParse(data['university_id'].toString());
@@ -83,10 +92,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _universityId = fetchedUniId;
           }
         }
+        
+        if (data['campus_id'] != null) {
+          _campusId = int.tryParse(data['campus_id'].toString());
+        }
 
         _isNew = false;
         _loading = false;
       });
+      
+      if (_universityId != null) {
+        await _loadCampuses(_universityId!);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -101,6 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final name = _nameController.text.trim();
     final studentCode = _studentCodeController.text.trim();
     final phone = _phoneController.text.trim();
+    final major = _majorController.text.trim();
 
     if (name.isEmpty || studentCode.isEmpty || phone.isEmpty) {
       NotificationService.showWarning(context, 'Vui lòng điền đầy đủ thông tin');
@@ -127,7 +145,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'name': name,
           'student_code': studentCode,
           'phone': phone,
+          'major': major.isNotEmpty ? major : null,
           'university_id': _universityId,
+          'campus_id': _campusId,
         })
             .select('student_id')
             .maybeSingle();
@@ -154,7 +174,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'name': name,
           'student_code': studentCode,
           'phone': phone,
+          'major': major.isNotEmpty ? major : null,
           'university_id': _universityId,
+          'campus_id': _campusId,
         })
             .eq('student_id', _studentId!)
             .select('student_id');
@@ -173,6 +195,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _loadCampuses(int universityId) async {
+    setState(() {
+      _loadingCampuses = true;
+      _campuses = [];
+      // Keep _campusId if it's already set from fetch, otherwise null
+    });
+    try {
+      final campuses = await _authService.getCampuses(universityId);
+      if (!mounted) return;
+      setState(() => _campuses = campuses);
+    } catch (_) {
+      // Ignore errors for campuses
+    } finally {
+      if (mounted) setState(() => _loadingCampuses = false);
+    }
+  }
+
+  Future<void> _onUniversityChanged(int? universityId) async {
+    setState(() {
+      _universityId = universityId;
+      _campusId = null;
+      _campuses = [];
+    });
+    if (universityId != null) await _loadCampuses(universityId);
   }
 
   @override
@@ -219,6 +267,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               readOnly: !_editing,
             ),
             const SizedBox(height: 12),
+            TextField(
+              controller: _majorController,
+              decoration: const InputDecoration(labelText: 'Ngành học'),
+              readOnly: !_editing,
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<int>(
               value: _universityId,
               isExpanded: true,
@@ -233,10 +287,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               }).toList(),
-              onChanged: _editing
-                  ? (value) => setState(() => _universityId = value)
-                  : null,
+              onChanged: _editing ? _onUniversityChanged : null,
             ),
+            if (_loadingCampuses) ...[
+              const SizedBox(height: 12),
+              const LinearProgressIndicator(),
+            ],
+            if (_campuses.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _campuses.any((c) => int.tryParse(c['campus_id'].toString()) == _campusId) ? _campusId : null,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Cơ sở'),
+                items: _campuses.map((campus) {
+                  final int campusId = int.tryParse(campus['campus_id'].toString()) ?? 0;
+                  return DropdownMenuItem<int>(
+                    value: campusId,
+                    child: Text(
+                      campus['name']?.toString() ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: _editing ? (value) => setState(() => _campusId = value) : null,
+              ),
+            ],
             const SizedBox(height: 24),
             if (_editing)
               ElevatedButton.icon(

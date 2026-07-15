@@ -81,6 +81,7 @@ class _EventListScreenState extends State<EventListScreen> {
             title,
             start_date,
             end_date,
+            image_url,
             student_in_event(student_id)
           ''')
           .gte('end_date', now);
@@ -222,25 +223,12 @@ class _EventListScreenState extends State<EventListScreen> {
                 
                 final ev = _events[index];
           return Card(
+            clipBehavior: Clip.antiAlias,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListTile(
-              leading: const Icon(Icons.event_available, color: Colors.blueAccent),
-              title: Text(ev['title'] ?? 'Chưa có tiêu đề'),
-              subtitle: Text(
-                "Từ: ${_formatDate(ev['start_date'])} - Đến: ${_formatDate(ev['end_date'])}",
-              ),
-              trailing: ev['registered'] == true
-                  ? const Chip(
-                label: Text("Đã ĐK", style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.green,
-              )
-                  : ElevatedButton(
-                onPressed: () => _registerEvent(index, ev['event_id']),
-                child: const Text("Đăng ký"),
-              ),
+            child: InkWell(
               onTap: () {
                 if (_studentId == null) {
                   NotificationService.showError(context, "Không tìm thấy mã sinh viên.");
@@ -257,6 +245,61 @@ class _EventListScreenState extends State<EventListScreen> {
                   ),
                 );
               },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (ev['image_url'] != null && ev['image_url'].toString().isNotEmpty)
+                    Image.network(
+                      ev['image_url'],
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.event_available, color: Colors.blueAccent),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ev['title'] ?? 'Chưa có tiêu đề',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Từ: ${_formatDate(ev['start_date'])} - Đến: ${_formatDate(ev['end_date'])}",
+                                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (ev['registered'] == true)
+                          const Chip(
+                            label: Text("Đã ĐK", style: TextStyle(color: Colors.white, fontSize: 12)),
+                            backgroundColor: Colors.green,
+                            visualDensity: VisualDensity.compact,
+                          )
+                        else
+                          ElevatedButton(
+                            onPressed: () => _registerEvent(index, ev['event_id']),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              minimumSize: const Size(0, 36),
+                            ),
+                            child: const Text("Đăng ký"),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
