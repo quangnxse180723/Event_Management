@@ -255,7 +255,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 children: [
                   const Text(
                     'Xin chào,',
-                    style: TextStyle(fontSize: 18, color: Colors.black),
+                    style: TextStyle(fontSize: 18),
                   ),
                   Text(
                     widget.role == 'organizer'
@@ -264,7 +264,6 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
                     ),
                   ),
                 ],
@@ -355,12 +354,12 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                      blurRadius: 6,
+                      color: Colors.black.withAlpha((0.05 * 255).toInt()),
+                      blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -378,7 +377,6 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -405,20 +403,14 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                           // Logic parse ngày (dùng chung)
                           Text(
                             (() {
-                              String? rawDate =
-                                  nextEvent?['event']?['start_date'] ??
-                                      nextEvent?['start_date'];
-                              if (rawDate == null || rawDate.isEmpty) {
-                                return 'Thời gian: -';
-                              }
-                              DateTime? dt = DateTime.tryParse(rawDate);
-                              if (dt != null) {
-                                return 'Thời gian: ${dt.toLocal().toString().split(' ')[0]}';
-                              } else {
-                                return 'Thời gian: ${rawDate.split('T')[0]}';
+                              try {
+                                final dateStr = nextEvent?['start_date'] ?? '';
+                                final date = DateTime.parse(dateStr);
+                                return '${date.day}/${date.month}/${date.year}';
+                              } catch (_) {
+                                return 'Chưa xác định';
                               }
                             })(),
-                            style: const TextStyle(color: Colors.black87),
                           ),
                         ],
                       ),
@@ -435,7 +427,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withAlpha((0.1 * 255).toInt()), blurRadius: 4)
@@ -546,7 +538,6 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                             alignment: Alignment.center,
                             child: Text(
                               '${day.day}',
-                              style: const TextStyle(color: Colors.black87),
                             ),
                           );
                         }
@@ -604,8 +595,8 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
       }) {
     return Card(
       elevation: 4,
-      color: Colors.white,
-      surfaceTintColor: Colors.white,
+      color: Theme.of(context).cardColor,
+      surfaceTintColor: Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -628,7 +619,7 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                     title,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.black54,
+                      color: Colors.grey,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -639,15 +630,14 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Colors.black,
+                      color: Colors.blue,
                     ),
                   )
                       : Text(
-                    '$value',
+                    value.toString(),
                     style: const TextStyle(
-                      fontSize: 26,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
                     ),
                   ),
                 ],

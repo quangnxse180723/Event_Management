@@ -66,7 +66,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
             itemBuilder: (context, index) {
               final event = events[index];
               return Card(
-                color: Colors.white.withOpacity(0.9),
+                color: Theme.of(context).cardColor,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -134,7 +134,7 @@ class _CheckinSessionListScreenState extends State<CheckinSessionListScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       builder: (ctx) {
         return SafeArea(
           child: Wrap(
@@ -226,7 +226,7 @@ class _CheckinSessionListScreenState extends State<CheckinSessionListScreen> {
             itemBuilder: (context, index) {
               final session = sessions[index];
               return Card(
-                color: Colors.white.withOpacity(0.9),
+                color: Theme.of(context).cardColor,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

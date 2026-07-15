@@ -37,10 +37,17 @@ class DisplayQRScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            QrImageView(
-              data: qrData,
-              version: QrVersions.auto,
-              size: 280.0,
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 280.0,
+              ),
             ),
             const SizedBox(height: 24),
             const Text(
