@@ -19,6 +19,11 @@ class DisplayQRScreen extends StatelessWidget {
     final String qrData = jsonEncode({'session_id': sessionId});
 
     return MainLayout(
+      appBar: AppBar(
+        title: const Text('Mã QR Điểm danh'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
