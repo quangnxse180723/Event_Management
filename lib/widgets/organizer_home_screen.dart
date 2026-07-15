@@ -366,7 +366,37 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.event, color: Colors.blue, size: 32),
+                    (() {
+                      final String? imageUrl = nextEvent?['event']?['image_url'] ?? nextEvent?['image_url'];
+                      if (imageUrl != null && imageUrl.isNotEmpty) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            imageUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                ),
+                          ),
+                        );
+                      } else {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.event, color: Colors.blue, size: 32),
+                        );
+                      }
+                    })(),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(

@@ -62,27 +62,43 @@ class SessionCheckInService {
       final eventId = sessionRes['event_id'];
 
       // 2. Lấy danh sách sinh viên đã đăng ký event này
-      final studentsRes = await supabase
+      final studentsInEventRes = await supabase
           .from('student_in_event')
-          .select('student_id, student(name, student_code)')
+          .select('student_id')
           .eq('event_id', eventId);
 
-      // 3. Lấy danh sách checkin của session này
+      if (studentsInEventRes.isEmpty) return [];
+
+      final List<int> studentIds = studentsInEventRes
+          .map<int>((e) => e['student_id'] as int)
+          .toList();
+
+      // 3. Lấy thông tin chi tiết sinh viên
+      final inList = '(${studentIds.join(',')})';
+      final studentsRes = await supabase
+          .from('student')
+          .select('student_id, name, student_code')
+          .filter('student_id', 'in', inList);
+
+      final studentsMap = {
+        for (var s in studentsRes) s['student_id']: s
+      };
+
+      // 4. Lấy danh sách checkin của session này
       final checkinsRes = await supabase
           .from('session_checkin')
           .select('checkin_id, student_id, method, created_at')
           .eq('session_id', sessionId);
 
-      // 4. Map check-in theo student_id để tra cứu nhanh
+      // 5. Map check-in theo student_id để tra cứu nhanh
       final checkinsMap = {
         for (var c in checkinsRes) c['student_id']: c
       };
 
-      // 5. Kết hợp dữ liệu (Join)
+      // 6. Kết hợp dữ liệu
       final List<Map<String, dynamic>> result = [];
-      for (var s in studentsRes) {
-        final stId = s['student_id'];
-        final studentData = s['student']; // map chứa name, student_code
+      for (var stId in studentIds) {
+        final studentData = studentsMap[stId];
         final c = checkinsMap[stId];
 
         result.add({
@@ -92,6 +108,7 @@ class SessionCheckInService {
           'checkin_id': c?['checkin_id'],
           'method': c?['method'],
           'checkin_time': c?['created_at'],
+          'checkin_status': c != null ? 'Đã Check-in' : 'Chưa Check-in',
         });
       }
 

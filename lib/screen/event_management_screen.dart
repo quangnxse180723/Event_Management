@@ -201,6 +201,29 @@ class _EventManagementScreenState extends State<EventManagementScreen> {
                 elevation: 3,
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(12),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: event.imageUrl != null && event.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            event.imageUrl!,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                ),
+                          )
+                        : Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.blue.withOpacity(0.1),
+                            child: const Icon(Icons.event, color: Colors.blue),
+                          ),
+                  ),
                   title: Text(
                     event.title,
                     style: const TextStyle(fontWeight: FontWeight.bold),
