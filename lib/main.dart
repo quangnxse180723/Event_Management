@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:student_attendance/screen/university_management_screen.dart';
-import 'package:student_attendance/widgets/admin_home_screen.dart';
+import 'package:student_attendance/presentation/admin/university_management_screen.dart';
+import 'package:student_attendance/presentation/shared/layouts/admin_home_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'theme_provider.dart';
-import 'screen/login_screen.dart';
-import 'app_theme.dart';
+import 'package:student_attendance/core/theme/theme_provider.dart';
+import 'package:student_attendance/presentation/auth/login_screen.dart';
+import 'package:student_attendance/core/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'supabase_config.dart';
-import 'services/notification_service.dart';
+import 'package:student_attendance/core/config/supabase_config.dart';
+import 'package:student_attendance/data/services/notification_service.dart';
 
 // Biến toàn cục để bắt sự kiện đổi mật khẩu khi app đang tắt (cold start)
 bool isPasswordRecoveryEvent = false;

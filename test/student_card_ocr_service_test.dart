@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:student_attendance/services/student_card_ocr_service.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:student_attendance/data/services/student_card_ocr_service.dart';
 
 void main() {
   group('StudentCardOcrService.parseText', () {
