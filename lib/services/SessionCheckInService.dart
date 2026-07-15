@@ -53,18 +53,51 @@ class SessionCheckInService {
 
   Future<List<Map<String, dynamic>>> getCheckinStatusForSession(int sessionId) async {
     try {
-      // Clear any cache and force fresh data
-      final response = await supabase
-          .rpc(
-        'get_checkin_status_for_session',
-        params: {'session_id': sessionId},
-      )
-          .select(); // Force fresh data
+      // 1. Lấy event_id của session
+      final sessionRes = await supabase
+          .from('event_session')
+          .select('event_id')
+          .eq('session_id', sessionId)
+          .single();
+      final eventId = sessionRes['event_id'];
 
-      print('DEBUG: Raw response from database: $response');
-      return List<Map<String, dynamic>>.from(response);
+      // 2. Lấy danh sách sinh viên đã đăng ký event này
+      final studentsRes = await supabase
+          .from('student_in_event')
+          .select('student_id, student(name, student_code)')
+          .eq('event_id', eventId);
+
+      // 3. Lấy danh sách checkin của session này
+      final checkinsRes = await supabase
+          .from('session_checkin')
+          .select('checkin_id, student_id, method, created_at')
+          .eq('session_id', sessionId);
+
+      // 4. Map check-in theo student_id để tra cứu nhanh
+      final checkinsMap = {
+        for (var c in checkinsRes) c['student_id']: c
+      };
+
+      // 5. Kết hợp dữ liệu (Join)
+      final List<Map<String, dynamic>> result = [];
+      for (var s in studentsRes) {
+        final stId = s['student_id'];
+        final studentData = s['student']; // map chứa name, student_code
+        final c = checkinsMap[stId];
+
+        result.add({
+          'student_id': stId,
+          'student_name': studentData != null ? studentData['name'] : 'Unknown',
+          'student_code': studentData != null ? studentData['student_code'] : 'Unknown',
+          'checkin_id': c?['checkin_id'],
+          'method': c?['method'],
+          'checkin_time': c?['created_at'],
+        });
+      }
+
+      return result;
     } catch (e) {
-      print('Lỗi khi lấy danh sách điểm danh: $e');
+      print('Lỗi khi lấy danh sách điểm danh (không dùng RPC): $e');
       return [];
     }
   }
