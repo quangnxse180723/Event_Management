@@ -6,6 +6,7 @@ class Student {
   final int? universityId;
   final int? userId;
   final DateTime? createdAt;
+  final String? major; // Ngành học
 
   Student({
     required this.studentId,
@@ -15,6 +16,7 @@ class Student {
     this.universityId,
     this.userId,
     this.createdAt,
+    this.major,
   });
 
   /// Factory để tạo Student trước khi insert DB
@@ -55,17 +57,19 @@ class Student {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
+      major: json['major'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    final map = {
+    final map = <String, dynamic>{
       'name': name,
       'student_code': studentCode,
       'phone': phone,
       'university_id': universityId,
       'user_id': userId,
       'created_at': createdAt?.toIso8601String(),
+      if (major != null) 'major': major,
     };
 
     // Chỉ đưa student_id nếu không phải placeholder

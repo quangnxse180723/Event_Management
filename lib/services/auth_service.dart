@@ -52,6 +52,7 @@ class AuthService {
     String password, {
     String? fullName,
     String? studentCode,
+    String? major,
     int? universityId,
     int? campusId,
   }) async {
@@ -60,6 +61,8 @@ class AuthService {
         'full_name': fullName.trim(),
       if (studentCode != null && studentCode.trim().isNotEmpty)
         'student_code': studentCode.trim().toUpperCase(),
+      if (major != null && major.trim().isNotEmpty)
+        'major': major.trim(),
       if (universityId != null) 'university_id': universityId,
       if (campusId != null) 'campus_id': campusId,
     };
@@ -115,6 +118,7 @@ class AuthService {
           'email': email,
           'student_code': studentCode.trim().toUpperCase(),
           'phone': '',
+          if (major != null && major.trim().isNotEmpty) 'major': major.trim(),
         });
       }
     }

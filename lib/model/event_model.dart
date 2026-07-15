@@ -1,6 +1,5 @@
 class Event {
   final int? id;
-  // BỔ SUNG: Thêm lại trường userId. Đây là trường bắt buộc để RLS hoạt động.
   final int? userId;
   final String title;
   final String description;
@@ -9,10 +8,11 @@ class Event {
   final DateTime endDate;
   final String? imageUrl;
   final String? location;
+  final String? category; // Danh mục sự kiện
 
   Event({
     this.id,
-    this.userId, // Thêm vào constructor
+    this.userId,
     required this.title,
     required this.description,
     required this.organizer,
@@ -20,12 +20,13 @@ class Event {
     required this.endDate,
     this.imageUrl,
     this.location,
+    this.category,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       id: json['event_id'],
-      userId: json['user_id'], // Đọc user_id từ JSON
+      userId: json['user_id'],
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       organizer: json['organizer'] ?? '',
@@ -33,6 +34,7 @@ class Event {
       endDate: DateTime.parse(json['end_date']),
       imageUrl: json['image_url'],
       location: json['location'],
+      category: json['category'] as String?,
     );
   }
 

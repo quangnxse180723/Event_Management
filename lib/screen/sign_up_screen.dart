@@ -20,6 +20,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   final _studentCodeController = TextEditingController();
+  final _majorController = TextEditingController(); // Bổ sung Ngành học
   final _authService = AuthService();
   final _ocrService = StudentCardOcrService();
   final _imagePicker = ImagePicker();
@@ -222,6 +223,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _passwordController.text.trim(),
         fullName: _nameController.text.trim(),
         studentCode: _studentCodeController.text.trim(),
+        major: _majorController.text.trim(), // Bổ sung major
         universityId: _universityId,
         campusId: _campusId,
       );
@@ -278,6 +280,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _passwordController.dispose();
     _nameController.dispose();
     _studentCodeController.dispose();
+    _majorController.dispose(); // Bổ sung
     super.dispose();
   }
 
@@ -371,6 +374,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               icon: Icons.badge_outlined,
               textCapitalization: TextCapitalization.characters,
               validator: _required('Vui lòng nhập mã số sinh viên.'),
+            ),
+            const SizedBox(height: 14),
+            _input(
+              controller: _majorController,
+              label: 'Ngành học (VD: Công nghệ thông tin)',
+              icon: Icons.menu_book_outlined,
+              textCapitalization: TextCapitalization.words,
+              validator: _required('Vui lòng nhập ngành học.'),
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<int>(

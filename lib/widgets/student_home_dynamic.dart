@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:student_attendance/screen/envent_list_screen.dart';
 import 'package:student_attendance/services/student_service.dart';
 import 'package:student_attendance/domain/entities/Student.dart';
@@ -8,6 +9,9 @@ import 'package:student_attendance/screen/profile_screen.dart';
 import 'package:student_attendance/screen/QRScannerScreen.dart';
 import 'package:student_attendance/screen/event_chatbot_screen.dart';
 import 'package:student_attendance/screen/settings_screen.dart';
+import 'package:student_attendance/screen/recommended_events_screen.dart';
+import 'package:student_attendance/services/event_recommendation_service.dart';
+import 'package:student_attendance/model/event_model.dart';
 
 import 'main_layout.dart';
 import 'notification_bell.dart';
@@ -113,6 +117,12 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
   bool loading = true;
   DateTime calendarFocusedDay = DateTime.now();
 
+  // --- Recommendation ---
+  final _recommendService = EventRecommendationService();
+  List<RecommendedEvent> _recommendations = [];
+  bool _loadingRec = false;
+  int? _currentStudentId;
+
   @override
   void initState() {
     super.initState();
@@ -169,7 +179,27 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
         nextEvent = upcoming.isNotEmpty ? upcoming.first : null;
         registeredDates = regDates;
         loading = false;
+        _currentStudentId = student.studentId;
       });
+    }
+    // Tải gợi ý sau khi đã có studentId
+    _loadRecommendations(student.studentId);
+  }
+
+  Future<void> _loadRecommendations(int studentId) async {
+    if (_loadingRec) return;
+    if (mounted) setState(() => _loadingRec = true);
+    try {
+      final recs = await _recommendService.getRecommendations(
+        studentId: studentId,
+        userId: widget.userId,
+        limit: 6,
+      );
+      if (mounted) setState(() => _recommendations = recs);
+    } catch (_) {
+      // Không crash nếu gợi ý lỗi
+    } finally {
+      if (mounted) setState(() => _loadingRec = false);
     }
   }
 
@@ -366,6 +396,9 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
             ),
           ),
           SizedBox(height: 16),
+          // --- SECTION GỢI Ý CHO BẠN ---
+          _buildRecommendationSection(context),
+          SizedBox(height: 8),
           // Sự kiện sắp tới (hiển thị cả tên sự kiện)
           if (nextEvent != null)
             Padding(
@@ -633,6 +666,157 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendationSection(BuildContext context) {
+    if (_loadingRec) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '✨ Gợi ý cho bạn',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Center(child: CircularProgressIndicator()),
+          ],
+        ),
+      );
+    }
+
+    if (_recommendations.isEmpty) {
+      return SizedBox.shrink(); // Ẩn nếu không có gợi ý
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '✨ Gợi ý cho bạn',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RecommendedEventsScreen(userId: widget.userId),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Xem thêm →',
+                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: _recommendations.length > 5 ? 5 : _recommendations.length, // Chỉ show tối đa 5 ở trang chủ
+            itemBuilder: (context, index) {
+              final rec = _recommendations[index];
+              return _buildRecommendedEventCard(rec);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedEventCard(RecommendedEvent rec) {
+    final event = rec.event;
+    final reason = rec.reason;
+    final dateStr = DateFormat('dd/MM').format(event.startDate.toLocal());
+
+    return Container(
+      width: 240,
+      margin: EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 4),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            // Chuyển tới EventListScreen hoặc mở chi tiết.
+            // Để đơn giản, ta chuyển người dùng tới EventListScreen.
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EventListScreen(userId: widget.userId),
+              ),
+            );
+            // Có thể tối ưu bằng cách mở thẳng chi tiết sự kiện
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Tag lý do
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    reason,
+                    style: TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  event.title,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Spacer(),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                    SizedBox(width: 4),
+                    Text(dateStr, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Spacer(),
+                    if (event.category != null && event.category!.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          event.category!,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(fontSize: 12, color: Colors.purple),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
