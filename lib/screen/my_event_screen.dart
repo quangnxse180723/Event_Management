@@ -19,6 +19,7 @@ class _MyEventScreenState extends State<MyEventScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _events = [];
   int? _studentId;
+  Set<int> _attendedEventIds = {};
 
   @override
   void initState() {
@@ -37,6 +38,19 @@ class _MyEventScreenState extends State<MyEventScreen> {
 
       _studentId = studentRow?['student_id'] as int?;
       final data = await _service.getMyEventsForAppUserId(widget.userId);
+
+      if (_studentId != null) {
+        final checkinsResponse = await _service.supabase
+            .from('session_checkin')
+            .select('event_session(event_id)')
+            .eq('student_id', _studentId!);
+        final checkins = List<Map<String, dynamic>>.from(checkinsResponse ?? []);
+        _attendedEventIds = checkins
+            .map((c) => c['event_session']?['event_id'])
+            .where((id) => id != null)
+            .cast<int>()
+            .toSet();
+      }
 
       if (mounted) {
         setState(() {
@@ -130,6 +144,17 @@ class _MyEventScreenState extends State<MyEventScreen> {
 
                   // ✅ Xử lý trạng thái tiếng Việt
                   String trangThai = (ev['status'] ?? '').toString().toLowerCase();
+                  
+                  // Logic cập nhật trạng thái dựa vào điểm danh thực tế
+                  int eventId = event['event_id'];
+                  if (trangThai == 'attended' && !_attendedEventIds.contains(eventId)) {
+                    // Nếu DB là attended nhưng chưa điểm danh phiên nào
+                    trangThai = 'registered';
+                  } else if (_attendedEventIds.contains(eventId) && trangThai != 'completed') {
+                    // Nếu đã điểm danh ít nhất 1 phiên thì là attended
+                    trangThai = 'attended';
+                  }
+
                   switch (trangThai) {
                     case 'registered':
                       trangThai = 'Đã đăng ký';
