@@ -206,20 +206,34 @@ class _MyEventScreenState extends State<MyEventScreen> {
                       ),
                       trailing: Column(
                         mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Chip(
-                            label: Text(
-                              trangThai,
-                              style: const TextStyle(fontSize: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: chipColor,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            backgroundColor: chipColor,
-                            padding: EdgeInsets.zero,
+                            child: Text(
+                              trangThai,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: (trangThai == 'Đã tham gia' || trangThai == 'Hoàn thành') 
+                                    ? Colors.green[800] 
+                                    : (trangThai == 'Vắng mặt') 
+                                        ? Colors.red[800] 
+                                        : Colors.orange[800],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                          if (trangThai == 'Đã tham gia' || trangThai == 'Hoàn thành')
+                          if (trangThai == 'Đã tham gia' || trangThai == 'Hoàn thành') ...[
+                            const SizedBox(height: 4),
                             InkWell(
                               onTap: () => _showRatingDialog(context, ev),
                               child: const Text('Đánh giá', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline, fontSize: 12)),
-                            )
+                            ),
+                          ]
                         ],
                       ),
                       onTap: () async {
