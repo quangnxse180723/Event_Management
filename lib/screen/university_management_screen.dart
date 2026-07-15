@@ -229,7 +229,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                 hintText: 'Tìm kiếm trường/đơn vị...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).cardColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -257,6 +257,7 @@ class _UniversityScreenState extends State<UniversityScreen> {
                       }
                       final uni = universities[index];
                       return Card(
+                        color: Theme.of(context).cardColor,
                         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: ListTile(
                           isThreeLine: true,
@@ -275,6 +276,12 @@ class _UniversityScreenState extends State<UniversityScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (uni.universityId != null)
+                                IconButton(
+                                  icon: const Icon(Icons.domain, color: Colors.purple),
+                                  tooltip: 'Cơ sở',
+                                  onPressed: () => _showCampusesDialog(uni),
+                                ),
                               IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.blue),
                                 onPressed: () => _showForm(uni: uni),
@@ -293,6 +300,187 @@ class _UniversityScreenState extends State<UniversityScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showCampusesDialog(University uni) {
+    showDialog(
+      context: context,
+      builder: (_) => _CampusesDialog(university: uni),
+    );
+  }
+}
+
+class _CampusesDialog extends StatefulWidget {
+  final University university;
+  const _CampusesDialog({required this.university});
+
+  @override
+  State<_CampusesDialog> createState() => _CampusesDialogState();
+}
+
+class _CampusesDialogState extends State<_CampusesDialog> {
+  List<Map<String, dynamic>> campuses = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCampuses();
+  }
+
+  Future<void> _loadCampuses() async {
+    setState(() => isLoading = true);
+    try {
+      final data = await UniversityService().getCampuses(widget.university.universityId!);
+      setState(() {
+        campuses = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void _showCampusForm({Map<String, dynamic>? campus}) {
+    final nameCtrl = TextEditingController(text: campus?['name']?.toString() ?? "");
+    final addressCtrl = TextEditingController(text: campus?['address']?.toString() ?? "");
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(campus == null ? "Thêm Cơ sở" : "Sửa Cơ sở"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: "Tên Cơ sở"),
+              ),
+              TextField(
+                controller: addressCtrl,
+                decoration: const InputDecoration(labelText: "Địa chỉ"),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Hủy", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              try {
+                if (campus == null) {
+                  await UniversityService().addCampus(
+                      widget.university.universityId!, nameCtrl.text.trim(), addressCtrl.text.trim());
+                } else {
+                  await UniversityService().updateCampus(
+                      int.parse(campus['campus_id'].toString()), nameCtrl.text.trim(), addressCtrl.text.trim());
+                }
+                if (mounted) {
+                  Navigator.pop(context);
+                  _loadCampuses();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              }
+            },
+            child: const Text("Lưu"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteCampus(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Xác nhận xóa"),
+        content: const Text("Bạn có chắc chắn muốn xóa cơ sở này?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text("Hủy", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text("Xóa"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await UniversityService().deleteCampus(id);
+      _loadCampuses();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Cơ sở - ${widget.university.name}"),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : campuses.isEmpty
+                ? const Center(child: Text("Chưa có cơ sở nào."))
+                : ListView.builder(
+                    itemCount: campuses.length,
+                    itemBuilder: (context, index) {
+                      final c = campuses[index];
+                      return ListTile(
+                        title: Text(c['name']?.toString() ?? ''),
+                        subtitle: Text(c['address']?.toString() ?? ''),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                              onPressed: () => _showCampusForm(campus: c),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                              onPressed: () => _deleteCampus(int.parse(c['campus_id'].toString())),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text("Đóng", style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
+        ),
+        ElevatedButton(
+          onPressed: () => _showCampusForm(),
+          child: const Text("Thêm"),
+        ),
+      ],
     );
   }
 }

@@ -51,6 +51,15 @@ class StudentService {
       // Hàm RPC của mình trả về student_id mới
       print('✅ [RPC] Tạo user và student THÀNH CÔNG! Student ID mới là: $response');
 
+      // 2.5 Cập nhật campus_id nếu có
+      if (student.campusId != null) {
+        await supabase
+            .from(studentTable)
+            .update({'campus_id': student.campusId})
+            .eq('student_id', response);
+        print('✅ Đã cập nhật campus_id cho sinh viên: ${student.campusId}');
+      }
+
     } on PostgrestException catch (error) {
       // 3. Bắt lỗi từ CSDL
       // Nếu CSDL ném lỗi (ví dụ: email trùng, mã SV trùng)

@@ -4,6 +4,7 @@ class Student {
   final String studentCode;
   final String phone;
   final int? universityId;
+  final int? campusId;
   final int? userId;
   final DateTime? createdAt;
   final String? major; // Ngành học
@@ -14,6 +15,7 @@ class Student {
     required this.studentCode,
     required this.phone,
     this.universityId,
+    this.campusId,
     this.userId,
     this.createdAt,
     this.major,
@@ -26,6 +28,7 @@ class Student {
     required String studentCode,
     required String phone,
     int? universityId,
+    int? campusId,
     int? userId,
     DateTime? createdAt,
   }) {
@@ -35,6 +38,7 @@ class Student {
       studentCode: studentCode,
       phone: phone,
       universityId: universityId,
+      campusId: campusId,
       userId: userId,
       createdAt: createdAt,
     );
@@ -50,6 +54,9 @@ class Student {
       phone: json['phone'] ?? '',
       universityId: json['university_id'] != null
           ? int.tryParse(json['university_id'].toString())
+          : null,
+      campusId: json['campus_id'] != null
+          ? int.tryParse(json['campus_id'].toString())
           : null,
       userId: json['user_id'] != null
           ? int.tryParse(json['user_id'].toString())
@@ -67,6 +74,7 @@ class Student {
       'student_code': studentCode,
       'phone': phone,
       'university_id': universityId,
+      'campus_id': campusId,
       'user_id': userId,
       'created_at': createdAt?.toIso8601String(),
       if (major != null) 'major': major,

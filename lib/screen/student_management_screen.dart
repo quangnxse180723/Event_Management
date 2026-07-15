@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // <-- THÊM IMPORT SUP
 import '../../domain/entities/Student.dart';
 import '../services/student_service.dart';
 import '../services/notification_service.dart';
+import '../services/university_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
@@ -132,9 +133,9 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
     InputDecoration buildInputDecoration(String label, IconData icon) {
       return InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: primaryColorDark),
+        prefixIcon: Icon(icon, color: Theme.of(context).iconTheme.color ?? primaryColorDark),
         filled: true,
-        fillColor: Colors.green[50]?.withAlpha(150),
+        fillColor: Theme.of(context).cardColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none, // Bỏ viền
@@ -152,18 +153,52 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
       builder: (_) {
         // --- DÙNG STATEFULBUILDER ĐỂ CẬP NHẬT DROPDOWN TRONG DIALOG ---
         int? _dialogSelectedUniversityId = student?.universityId;
+        int? _dialogSelectedCampusId = student?.campusId;
+        List<Map<String, dynamic>> _dialogCampuses = [];
+        bool _isDialogCampusesLoading = false;
 
         return StatefulBuilder(builder: (context, setDialogState) {
+          // Hàm gọi API lấy danh sách campus
+          Future<void> _loadCampusesForDialog(int uniId) async {
+            setDialogState(() {
+              _isDialogCampusesLoading = true;
+              _dialogCampuses = [];
+              // Không clear campusId nếu đây là lần load đầu tiên và uniId khớp với student.universityId
+              if (student != null && uniId != student.universityId) {
+                 _dialogSelectedCampusId = null;
+              }
+            });
+            try {
+              final cps = await UniversityService().getCampuses(uniId);
+              setDialogState(() {
+                _dialogCampuses = cps;
+                _isDialogCampusesLoading = false;
+                
+                // Nếu campusId hiện tại không nằm trong danh sách mới, reset nó
+                if (_dialogSelectedCampusId != null) {
+                  bool exists = cps.any((c) => int.parse(c['campus_id'].toString()) == _dialogSelectedCampusId);
+                  if (!exists) _dialogSelectedCampusId = null;
+                }
+              });
+            } catch (e) {
+              setDialogState(() { _isDialogCampusesLoading = false; });
+            }
+          }
+
+          // Load campuses lần đầu nếu đã có trường
+          if (_dialogSelectedUniversityId != null && _dialogCampuses.isEmpty && !_isDialogCampusesLoading) {
+            _loadCampusesForDialog(_dialogSelectedUniversityId!);
+          }
           return AlertDialog(
             // --- LÀM ĐẸP DIALOG ---
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.0)),
-            backgroundColor: Colors.grey[50], // Màu nền dialog
+            backgroundColor: Theme.of(context).dialogBackgroundColor,
             title: Center(
               child: Text(
                 student == null ? "Thêm sinh viên" : "Cập nhật sinh viên",
                 style: TextStyle(
-                    fontWeight: FontWeight.bold, color: primaryColorDark),
+                    fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.titleLarge?.color),
               ),
             ),
             content: SingleChildScrollView(
@@ -205,11 +240,36 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                       setDialogState(() {
                         _dialogSelectedUniversityId = value;
                       });
+                      if (value != null) {
+                        _loadCampusesForDialog(value);
+                      }
                     },
                     validator: (value) =>
                     value == null ? 'Vui lòng chọn trường' : null,
                     isExpanded: true, // Cho phép tên dài
                   ),
+                  const SizedBox(height: 12),
+                  // --- DROPDOWN CHỌN CƠ SỞ ---
+                  if (_dialogSelectedUniversityId != null)
+                    _isDialogCampusesLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : DropdownButtonFormField<int>(
+                            value: _dialogSelectedCampusId,
+                            decoration: buildInputDecoration("Cơ sở (Campus)", Icons.domain_outlined),
+                            items: _dialogCampuses.map((c) {
+                              return DropdownMenuItem<int>(
+                                value: int.parse(c['campus_id'].toString()),
+                                child: Text(c['name']?.toString() ?? '', overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setDialogState(() {
+                                _dialogSelectedCampusId = value;
+                              });
+                            },
+                            validator: (value) => value == null ? 'Vui lòng chọn cơ sở' : null,
+                            isExpanded: true,
+                          ),
                   // ----------------------------------------
 
                   if (student == null) ...[
@@ -261,6 +321,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                         studentCode: codeController.text,
                         phone: phoneController.text,
                         universityId: _dialogSelectedUniversityId, // <-- LẤY ID TỪ DROPDOWN
+                        campusId: _dialogSelectedCampusId,
                         createdAt: DateTime.now(),
                       );
                       await _studentService.addStudent(
@@ -278,7 +339,8 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                         name: nameController.text,
                         studentCode: codeController.text,
                         phone: phoneController.text,
-                        universityId: _dialogSelectedUniversityId, // <-- LẤY ID TỪ DROPDOWN
+                        universityId: _dialogSelectedUniversityId,
+                        campusId: _dialogSelectedCampusId,
                         userId: student.userId,
                         createdAt: student.createdAt,
                       );
@@ -470,7 +532,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                       
                       final s = students[index];
           return Card(
-            color: Colors.white.withAlpha((255 * 0.9).round()),
+            color: Theme.of(context).cardColor,
             shadowColor:
             Colors.green[900]?.withAlpha((255 * 0.1).round()),
             margin: const EdgeInsets.symmetric(vertical: 8),
@@ -503,6 +565,7 @@ class _StudentManagementScreenState extends State<StudentManagementScreen> {
                   // --- HIỂN THỊ TÊN TRƯỜNG ---
                   Text("Trường: ${_getUniversityName(s.universityId)}"),
                   // --------------------------
+                  if (s.campusId != null) Text("Campus ID: ${s.campusId}"),
 
                   if (s.userId != null) Text("User ID: ${s.userId}"),
                 ],

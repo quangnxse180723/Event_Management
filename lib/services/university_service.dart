@@ -71,4 +71,59 @@ class UniversityService {
       throw Exception("Fetch failed: $e");
     }
   }
+
+  // --- CRUD cho Campus ---
+  Future<List<Map<String, dynamic>>> getCampuses(int universityId) async {
+    try {
+      final data = await supabase
+          .from('university_campus')
+          .select()
+          .eq('university_id', universityId)
+          .order('name', ascending: true);
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      throw Exception("Lỗi lấy danh sách cơ sở: $e");
+    }
+  }
+
+  Future<void> addCampus(int universityId, String name, String address) async {
+    try {
+      await supabase.from('university_campus').insert({
+        'university_id': universityId,
+        'name': name,
+        'address': address,
+      });
+    } catch (e) {
+      throw Exception("Thêm cơ sở thất bại: $e");
+    }
+  }
+
+  Future<void> updateCampus(int campusId, String name, String address) async {
+    try {
+      await supabase
+          .from('university_campus')
+          .update({
+            'name': name,
+            'address': address,
+          })
+          .eq('campus_id', campusId);
+    } catch (e) {
+      throw Exception("Sửa cơ sở thất bại: $e");
+    }
+  }
+
+  Future<void> deleteCampus(int campusId) async {
+    try {
+      final deletedData = await supabase
+          .from('university_campus')
+          .delete()
+          .eq('campus_id', campusId)
+          .select();
+      if (deletedData.isEmpty) {
+        throw Exception("Không thể xóa cơ sở. Có thể cơ sở này đang được tham chiếu.");
+      }
+    } catch (e) {
+      throw Exception("Xóa cơ sở thất bại: $e");
+    }
+  }
 }

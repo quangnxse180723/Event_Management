@@ -103,9 +103,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(top: 8),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
                   children: [
@@ -136,8 +136,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           });
                         },
                         style: SegmentedButton.styleFrom(
-                          backgroundColor: Colors.grey[200],
-                          foregroundColor: AppColors.primary,
+                          backgroundColor: Theme.of(context).cardColor,
+                          foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : AppColors.primary,
                           selectedForegroundColor: Colors.white,
                           selectedBackgroundColor: AppColors.primary,
                         ),
