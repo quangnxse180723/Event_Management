@@ -4,6 +4,7 @@ import '../widgets/main_layout.dart';
 import 'ManualCheckinScreen.dart';
 import 'display_qr_screen.dart';
 
+// --- Màn hình 1: Danh sách Sự kiện để Điểm danh ---
 class SessionListScreen extends StatefulWidget {
   const SessionListScreen({super.key});
 
@@ -12,6 +13,109 @@ class SessionListScreen extends StatefulWidget {
 }
 
 class _SessionListScreenState extends State<SessionListScreen> {
+  late final Stream<List<Map<String, dynamic>>> _eventsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _eventsStream = Supabase.instance.client
+        .from('event')
+        .stream(primaryKey: ['event_id'])
+        .order('start_date', ascending: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MainLayout(
+      useScrollView: false,
+      floatingActionButton: null,
+      appBar: AppBar(
+        title: const Text(
+          "Chọn sự kiện để điểm danh",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false, // Ẩn nút back vì đây là tab
+      ),
+      child: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _eventsStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.white));
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: Colors.white)),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text('Không có sự kiện nào.', style: TextStyle(color: Colors.white)),
+            );
+          }
+
+          final events = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return Card(
+                color: Colors.white.withOpacity(0.9),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.event, color: Colors.blue),
+                  title: Text(
+                    event['title'] ?? 'Không có tiêu đề',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text('Tổ chức bởi: ${event['organizer'] ?? 'Chưa rõ'}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CheckinSessionListScreen(
+                          eventId: event['event_id'],
+                          eventTitle: event['title'] ?? 'Phiên điểm danh',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// --- Màn hình 2: Danh sách Phiên của 1 Sự kiện cụ thể ---
+class CheckinSessionListScreen extends StatefulWidget {
+  final int eventId;
+  final String eventTitle;
+
+  const CheckinSessionListScreen({
+    super.key,
+    required this.eventId,
+    required this.eventTitle,
+  });
+
+  @override
+  State<CheckinSessionListScreen> createState() => _CheckinSessionListScreenState();
+}
+
+class _CheckinSessionListScreenState extends State<CheckinSessionListScreen> {
   late final Stream<List<Map<String, dynamic>>> _sessionsStream;
 
   @override
@@ -20,6 +124,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
     _sessionsStream = Supabase.instance.client
         .from('event_session')
         .stream(primaryKey: ['session_id'])
+        .eq('event_id', widget.eventId) // Lọc theo sự kiện
         .order('start_time', ascending: false);
   }
 
@@ -76,22 +181,21 @@ class _SessionListScreenState extends State<SessionListScreen> {
   Widget build(BuildContext context) {
     return MainLayout(
       useScrollView: false,
-      floatingActionButton: null, // Bỏ nút refresh đi vì đã dùng Stream (Realtime)
+      floatingActionButton: null,
       appBar: AppBar(
-        title: const Text(
-          "Chọn phiên để điểm danh",
-          style: TextStyle(
+        title: Text(
+          widget.eventTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 22,
+            fontSize: 20,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false, // Ẩn nút back
       ),
-
-      // 🔹 Nội dung chính
       child: StreamBuilder<List<Map<String, dynamic>>>(
         stream: _sessionsStream,
         builder: (context, snapshot) {
@@ -109,7 +213,7 @@ class _SessionListScreenState extends State<SessionListScreen> {
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Text(
-                'Không có phiên nào được tìm thấy.',
+                'Chưa có phiên nào cho sự kiện này.',
                 style: TextStyle(color: Colors.white),
               ),
             );
