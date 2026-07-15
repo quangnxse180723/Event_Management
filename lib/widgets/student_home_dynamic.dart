@@ -144,8 +144,24 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
     final student = Student.fromJson(studentRow);
     final myEventsList =
         await studentService.getMyEventsByStudentId(student.studentId);
-    final attendedEvents =
-        myEventsList.where((e) => (e['status'] ?? '') == 'checked_in').toList();
+
+    // Lấy danh sách các session mà sinh viên đã điểm danh
+    final checkinsResponse = await studentService.supabase
+        .from('session_checkin')
+        .select('event_session(event_id)')
+        .eq('student_id', student.studentId);
+    
+    final checkins = List<Map<String, dynamic>>.from(checkinsResponse ?? []);
+    final uniqueAttendedEventIds = checkins
+        .map((c) => c['event_session']?['event_id'])
+        .where((id) => id != null)
+        .toSet();
+
+    final attendedEvents = myEventsList.where((e) {
+      final status = e['status'] ?? '';
+      final eventId = e['event']?['event_id'];
+      return status == 'attended' || status == 'completed' || uniqueAttendedEventIds.contains(eventId);
+    }).toList();
     final now = DateTime.now();
     final upcoming = myEventsList.where((e) {
       final event = e['event'];
