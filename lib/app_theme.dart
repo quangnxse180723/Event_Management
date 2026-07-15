@@ -48,6 +48,7 @@ ThemeData buildAppTheme() {
     brightness: Brightness.light,
     primaryColor: AppColors.primary,
     scaffoldBackgroundColor: AppColors.background,
+    cardColor: AppColors.card,
     primarySwatch: AppColors.primarySwatch,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
@@ -73,6 +74,7 @@ ThemeData buildAppDarkTheme() {
     brightness: Brightness.dark,
     primaryColor: AppDarkColors.primary,
     scaffoldBackgroundColor: AppDarkColors.background,
+    cardColor: AppDarkColors.card,
     primarySwatch: AppColors.primarySwatch,
     colorScheme: const ColorScheme.dark(
       primary: AppDarkColors.primary,

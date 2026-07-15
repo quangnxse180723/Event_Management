@@ -66,7 +66,6 @@ class _SessionListScreenState extends State<SessionListScreen> {
             itemBuilder: (context, index) {
               final event = events[index];
               return Card(
-                color: Theme.of(context).cardColor,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -226,7 +225,6 @@ class _CheckinSessionListScreenState extends State<CheckinSessionListScreen> {
             itemBuilder: (context, index) {
               final session = sessions[index];
               return Card(
-                color: Theme.of(context).cardColor,
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
