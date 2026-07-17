@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:student_attendance/data/services/api_service.dart';
 import 'package:student_attendance/core/theme/app_theme.dart';
 import 'package:student_attendance/presentation/shared/layouts/main_layout.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({Key? key}) : super(key: key);
@@ -15,6 +17,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   List<Map<String, dynamic>> _leaderboard = [];
+  int? _currentStudentId;
+  Map<String, dynamic>? _currentUserStats;
+  int? _currentUserRank;
 
   @override
   void initState() {
@@ -61,9 +66,41 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       final sortedList = studentStats.values.toList()
         ..sort((a, b) => (b['event_count'] as int).compareTo(a['event_count'] as int));
 
+      int? currentStudentId;
+      try {
+        final authId = Supabase.instance.client.auth.currentUser?.id;
+        if (authId != null) {
+          final appUser = await Supabase.instance.client.from('app_user').select('user_id').eq('auth_id', authId).maybeSingle();
+          if (appUser != null) {
+            final student = await Supabase.instance.client.from('student').select('student_id').eq('user_id', appUser['user_id']).maybeSingle();
+            if (student != null) {
+              currentStudentId = student['student_id'];
+            }
+          }
+        }
+      } catch (e) {
+        // Bỏ qua lỗi auth
+      }
+
+      Map<String, dynamic>? currentUserStats;
+      int? currentUserRank;
+
+      if (currentStudentId != null) {
+        for (int i = 0; i < sortedList.length; i++) {
+          if (sortedList[i]['student_id'] == currentStudentId) {
+            currentUserStats = sortedList[i];
+            currentUserRank = i + 1;
+            break;
+          }
+        }
+      }
+
       if (mounted) {
         setState(() {
           _leaderboard = sortedList;
+          _currentStudentId = currentStudentId;
+          _currentUserStats = currentUserStats;
+          _currentUserRank = currentUserRank;
           _isLoading = false;
         });
       }
@@ -217,6 +254,80 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     }
   }
 
+  Widget _buildCurrentUserStickyBottom() {
+    if (_currentUserStats == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            )
+          ],
+        ),
+        child: const Text(
+          'Bạn chưa tham gia sự kiện nào.\nHãy tham gia ngay để ghi danh lên Bảng xếp hạng!', 
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey), 
+          textAlign: TextAlign.center
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          )
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: _buildBadge(_currentUserRank!),
+          title: Text(
+            'Hạng của bạn: ${_currentUserStats!['name']}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text('${_currentUserStats!['student_code']} • ${_currentUserStats!['university']}'),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, color: Colors.amber, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '${_currentUserStats!['event_count']}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          onTap: () => _showStudentDetails(context, _currentUserStats!),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -228,63 +339,72 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
       child: Stack(
         children: [
-          if (!_isLoading && _leaderboard.isEmpty)
-            const Center(child: Text('Chưa có dữ liệu.'))
-          else if (!_isLoading)
-            ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _leaderboard.length,
-              itemBuilder: (context, index) {
-                final student = _leaderboard[index];
-                final rank = index + 1;
-                
-                return Card(
-                  elevation: rank <= 3 ? 4 : 2,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: rank == 1 
-                      ? const BorderSide(color: Colors.amber, width: 2)
-                      : BorderSide.none,
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: _buildBadge(rank),
-                    title: Text(
-                      student['name'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: rank <= 3 ? 18 : 16,
-                      ),
-                    ),
-                    subtitle: Text('${student['student_code']} • ${student['university']}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${student['event_count']}',
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+          Column(
+            children: [
+              Expanded(
+                child: _isLoading 
+                  ? Container()
+                  : _leaderboard.isEmpty
+                    ? const Center(child: Text('Chưa có dữ liệu.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16.0),
+                        itemCount: _leaderboard.length,
+                        itemBuilder: (context, index) {
+                          final student = _leaderboard[index];
+                          final rank = index + 1;
+                          
+                          return Card(
+                            elevation: rank <= 3 ? 4 : 2,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: rank == 1 
+                                ? const BorderSide(color: Colors.amber, width: 2)
+                                : BorderSide.none,
                             ),
-                          ),
-                        ],
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: _buildBadge(rank),
+                              title: Text(
+                                student['name'],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: rank <= 3 ? 18 : 16,
+                                ),
+                              ),
+                              subtitle: Text('${student['student_code']} • ${student['university']}'),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.star, color: Colors.amber, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${student['event_count']}',
+                                      style: const TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              onTap: () => _showStudentDetails(context, student),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                    onTap: () => _showStudentDetails(context, student),
-                  ),
-                );
-              },
-            ),
+              ),
+              if (!_isLoading && _currentStudentId != null)
+                _buildCurrentUserStickyBottom(),
+            ],
+          ),
           
           if (_isLoading)
             Container(
