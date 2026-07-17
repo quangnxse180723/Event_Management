@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:table_calendar/table_calendar.dart' as tc;
 
@@ -10,6 +10,7 @@ import 'package:student_attendance/presentation/student/student_in_event_screen.
 import 'package:student_attendance/presentation/profile/organizer_profile_screen.dart'; // ✅ ĐÃ THÊM IMPORT MÀN HÌNH PROFILE
 import 'package:student_attendance/presentation/shared/layouts/main_layout.dart';
 import 'package:student_attendance/presentation/shared/widgets/notification_bell.dart';
+import 'package:student_attendance/presentation/leaderboard/leaderboard_screen.dart';
 
 // ------------------------------
 // MÀN HÌNH CHÍNH DÀNH CHO ORGANIZER
@@ -343,6 +344,65 @@ class _OrganizerHomeContentState extends State<_OrganizerHomeContent> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+
+          // Bảng xếp hạng Banner
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.5),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0,2))],
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      '🏆',
+                      style: TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bảng xếp hạng Tích cực',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Xem ngay top sinh viên năng nổ nhất!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.8), size: 16),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 14),
 

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -80,23 +80,61 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       });
 
       if (mounted) {
-        NotificationService.showSuccess(
-          context,
-          "🎉 Điểm danh thành công!",
-        );
-
-        // Khóa điều hướng để user không bấm Back giữa chừng
+        // Tắt camera an toàn
+        await _controller.stop();
+        if (!mounted) return;
         _isNavigating = true;
 
-        // Tắt camera an toàn trước khi pop để tránh crash native
-        await _controller.stop();
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 80),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Thành công!',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Bạn đã điểm danh thành công.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context); // Đóng dialog
+                        },
+                        child: const Text('Hoàn tất', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
 
-        // Delay một chút để người dùng kịp đọc thông báo thành công
-        await Future.delayed(const Duration(milliseconds: 1000));
-
-        // Kiểm tra canPop để tuyệt đối không bao giờ pop nhầm Navigator root
-        if (mounted && Navigator.canPop(context)) {
-          Navigator.pop(context);
+        // Sau khi đóng dialog, restart camera
+        if (mounted) {
+          _isNavigating = false;
+          _controller.start();
         }
       }
     } catch (e) {
@@ -114,13 +152,14 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   // Hàm xử lý thoát an toàn tập trung (Dùng chung cho cả nút Back UI và nút Back vật lý)
   Future<void> _safePop() async {
     if (_isNavigating) return;
-    _isNavigating = true;
-
-    // Dừng camera dứt điểm trước khi đóng giao diện
-    await _controller.stop();
 
     if (mounted && Navigator.canPop(context)) {
-      Navigator.pop(context);
+      _isNavigating = true;
+      // Dừng camera dứt điểm trước khi đóng giao diện
+      await _controller.stop();
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -136,8 +175,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     // Lưu ý: Nếu đang dùng Flutter 3.16+, có thể thay WillPopScope bằng PopScope
     return WillPopScope(
       onWillPop: () async {
-        await _safePop();
-        return false; // Ngăn hệ thống tự pop mặc định
+        if (Navigator.canPop(context)) {
+          await _safePop();
+          return false; // Ngăn hệ thống tự pop mặc định vì đã xử lý bằng _safePop
+        }
+        return true; // Cho phép hệ thống xử lý thoát app/đóng tab
       },
       child: MainLayout(
         useScrollView: false,

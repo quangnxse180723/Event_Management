@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:student_attendance/data/models/event_model.dart';
 
 class ApiService {
@@ -82,6 +82,7 @@ class ApiService {
       final response = await supabase
           .from('student_in_event')
           .select('''
+            status,
             event( event_id, title, start_date ),
             student( student_id, name, student_code, university( university_id, name ) )
           ''');
@@ -89,6 +90,24 @@ class ApiService {
     } catch (e) {
       print('LỖI THỐNG KÊ CHI TIẾT: $e');
       throw Exception('Không thể tải dữ liệu thống kê.');
+    }
+  }
+
+  /// Lấy dữ liệu điểm danh thực tế từ bảng session_checkin cho Bảng xếp hạng.
+  Future<List<Map<String, dynamic>>> fetchRealAttendanceForLeaderboard() async {
+    try {
+      final response = await supabase
+          .from('session_checkin')
+          .select('''
+            event_session (
+              event ( event_id, title, start_date )
+            ),
+            student ( student_id, name, student_code, university ( name ) )
+          ''');
+      return response as List<Map<String, dynamic>>;
+    } catch (e) {
+      print('LỖI BẢNG XẾP HẠNG: $e');
+      throw Exception('Không thể tải dữ liệu bảng xếp hạng.');
     }
   }
 

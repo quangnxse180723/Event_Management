@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:student_attendance/data/services/api_service.dart';
@@ -115,18 +115,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         segments: const [
                           ButtonSegment(
                             value: StatsType.byUniversity,
-                            label: Text('Theo Trường'),
-                            icon: Icon(Icons.school),
+                            label: Text('Trường', style: TextStyle(fontSize: 12)),
+                            icon: Icon(Icons.school, size: 16),
                           ),
                           ButtonSegment(
                             value: StatsType.byEvent,
-                            label: Text('Theo Sự kiện'),
-                            icon: Icon(Icons.event),
+                            label: Text('Sự kiện', style: TextStyle(fontSize: 12)),
+                            icon: Icon(Icons.event, size: 16),
                           ),
                           ButtonSegment(
                             value: StatsType.byDate,
-                            label: Text('Theo Ngày'),
-                            icon: Icon(Icons.date_range),
+                            label: Text('Ngày', style: TextStyle(fontSize: 12)),
+                            icon: Icon(Icons.date_range, size: 16),
                           ),
                         ],
                         selected: {_selectedStatsType},
@@ -160,7 +160,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           }
 
                           final statsData = _processData(snapshot.data!);
-                          final sortedData = statsData.entries.toList()
+                          var sortedData = statsData.entries.toList()
                             ..sort((a, b) => b.value.compareTo(a.value));
 
                           if (sortedData.isEmpty) {

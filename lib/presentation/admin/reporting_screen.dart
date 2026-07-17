@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -10,6 +10,7 @@ import 'package:student_attendance/data/services/api_service.dart';
 import 'package:student_attendance/core/theme/app_theme.dart';
 import 'package:student_attendance/presentation/shared/layouts/main_layout.dart';
 import 'package:student_attendance/presentation/statistics/statistics_screen.dart';
+import 'package:student_attendance/presentation/leaderboard/leaderboard_screen.dart';
 
 class ReportingScreen extends StatefulWidget {
   final String role;
@@ -280,9 +281,21 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 context,
                 icon: Icons.calendar_today,
                 title: 'Thống kê theo ngày',
-                subtitle:
-                'Xem biểu đồ số lượng sinh viên tham gia theo ngày.',
+                subtitle: 'Xem biểu đồ số lượng sinh viên tham gia theo ngày.',
                 onTap: () => _navigateToStatistics(StatsType.byDate),
+              ),
+              const SizedBox(height: 16),
+              _buildReportCard(
+                context,
+                icon: Icons.leaderboard,
+                title: 'Bảng xếp hạng sinh viên',
+                subtitle: 'Top 10 sinh viên tham gia nhiều sự kiện nhất.',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                  );
+                },
               ),
             ],
           ),

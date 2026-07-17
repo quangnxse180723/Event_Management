@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:student_attendance/presentation/event/event_list_screen.dart';
 import 'package:student_attendance/data/services/student_service.dart';
@@ -12,6 +12,7 @@ import 'package:student_attendance/presentation/profile/settings_screen.dart';
 import 'package:student_attendance/presentation/event/recommended_events_screen.dart';
 import 'package:student_attendance/data/services/event_recommendation_service.dart';
 import 'package:student_attendance/data/models/event_model.dart';
+import 'package:student_attendance/presentation/leaderboard/leaderboard_screen.dart';
 
 import 'package:student_attendance/presentation/shared/layouts/main_layout.dart';
 import 'package:student_attendance/presentation/shared/widgets/notification_bell.dart';
@@ -441,6 +442,64 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
                   ],
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Bảng xếp hạng Banner
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0,2))],
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      '🏆',
+                      style: TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bảng xếp hạng Tích cực',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Xem ngay top sinh viên năng nổ nhất!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.8), size: 16),
+                  ],
+                ),
+              ),
             ),
           ),
           SizedBox(height: 16),
