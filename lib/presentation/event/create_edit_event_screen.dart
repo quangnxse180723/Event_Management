@@ -87,13 +87,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _organizerController.dispose();
-    super.dispose();
-  }
+
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
