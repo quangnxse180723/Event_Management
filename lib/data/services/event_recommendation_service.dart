@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:student_attendance/data/models/event_model.dart';
 
 /// Mô hình chứa sự kiện được gợi ý kèm điểm và lý do
@@ -187,7 +187,9 @@ class EventRecommendationService {
 
       // Trả về top [limit]
       return scored.take(limit).toList();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ [EventRecommendationService] Lỗi khi tạo gợi ý: $e');
+      print('❌ StackTrace: $stackTrace');
       // Nếu lỗi, trả về danh sách rỗng để không crash UI
       return [];
     }

@@ -796,7 +796,33 @@ class _StudentHomeContentState extends State<_StudentHomeContent> {
     }
 
     if (_recommendations.isEmpty) {
-      return SizedBox.shrink(); // Ẩn nếu không có gợi ý
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '✨ Gợi ý cho bạn',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  'Chưa có gợi ý phù hợp. Hãy tương tác thêm với các sự kiện nhé!',
+                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return Column(
