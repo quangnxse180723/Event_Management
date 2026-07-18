@@ -48,4 +48,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-lib/env/env.dart
+lib/env/env.dartlib/core/config/local_keys.dart 

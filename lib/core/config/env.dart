@@ -1,7 +1,9 @@
+import 'local_keys.dart';
+
 class Env {
   static const String geminiApiKey = String.fromEnvironment(
     'GEMINI_API_KEY',
-    defaultValue: 'YOUR_API_KEY_HERE',
+    defaultValue: LocalKeys.geminiApiKey,
   );
   static const String geminiModel = String.fromEnvironment(
     'GEMINI_MODEL',
