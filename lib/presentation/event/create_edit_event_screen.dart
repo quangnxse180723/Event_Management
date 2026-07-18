@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:student_attendance/core/theme/app_theme.dart';
@@ -28,6 +28,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _organizerController; // ✅ Giữ 1 bản duy nhất
+  late TextEditingController _imageUrlController;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -46,6 +47,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     _titleController = TextEditingController(text: widget.event?.title ?? '');
     _descriptionController = TextEditingController(text: widget.event?.description ?? '');
     _organizerController = TextEditingController(text: widget.event?.organizer ?? '');
+    _imageUrlController = TextEditingController(text: widget.event?.imageUrl ?? '');
     _startDate = widget.event?.startDate;
     _endDate = widget.event?.endDate;
     _selectedOrganizerId = widget.event?.userId;
@@ -53,6 +55,15 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     if (widget.role == 'admin') {
       _loadOrganizers();
     }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _organizerController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadOrganizers() async {
@@ -124,6 +135,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       'title': _titleController.text,
       'description': _descriptionController.text,
       'organizer': _organizerController.text,
+      'image_url': _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
       'start_date': _startDate!.toIso8601String(),
       'end_date': _endDate!.toIso8601String(),
       'user_id': (widget.role == 'admin') ? _selectedOrganizerId : widget.userId,
@@ -214,6 +226,12 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
                 maxLines: 4,
                 validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _imageUrlController,
+                decoration: const InputDecoration(labelText: 'Đường dẫn ảnh Cover (Tùy chọn)'),
               ),
               const SizedBox(height: 24),
 
