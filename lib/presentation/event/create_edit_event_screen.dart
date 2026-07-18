@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
@@ -125,12 +125,16 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
 
     setState(() => _isUploading = true);
     try {
-      final file = File(image.path);
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      final bytes = await image.readAsBytes();
+      final fileExt = image.name.split('.').last;
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       
       final supabase = Supabase.instance.client;
-      // Upload file lên bucket 'events'
-      await supabase.storage.from('events').upload(fileName, file);
+      // Upload file dạng binary để hỗ trợ đa nền tảng (Web & Mobile)
+      await supabase.storage.from('events').uploadBinary(
+        fileName, 
+        bytes,
+      );
       
       // Lấy link public
       final imageUrl = supabase.storage.from('events').getPublicUrl(fileName);
