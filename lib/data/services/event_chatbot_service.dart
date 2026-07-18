@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:http/http.dart' as http;
@@ -12,7 +12,15 @@ class EventChatbotService {
         _httpClient = httpClient ?? http.Client();
 
   static const _geminiApiKey = Env.geminiApiKey;
-  static const _geminiModel = Env.geminiModel;
+  static const _geminiModelConfig = Env.geminiModel;
+
+  // Xử lý tự động map các model không có thực trên API Google (như 3.1) về model chuẩn
+  static String get _geminiModel {
+    if (_geminiModelConfig == 'gemini-3.1-flash-lite') {
+      return 'gemini-1.5-flash'; // Fallback về model thực tế hoạt động
+    }
+    return _geminiModelConfig;
+  }
 
   final SupabaseClient _supabase;
   final http.Client _httpClient;
