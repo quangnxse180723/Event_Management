@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:student_attendance/core/theme/app_theme.dart';
 import 'package:student_attendance/data/models/event_model.dart';
@@ -34,6 +37,7 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
 
   final ApiService _apiService = ApiService();
   bool _isLoading = false;
+  bool _isUploading = false;
   late final bool _isEditMode;
 
   List<Map<String, dynamic>> _organizers = [];
@@ -104,6 +108,35 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
           _endDate = picked;
         }
       });
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    
+    if (image == null) return;
+
+    setState(() => _isUploading = true);
+    try {
+      final file = File(image.path);
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      
+      final supabase = Supabase.instance.client;
+      // Upload file lên bucket 'events'
+      await supabase.storage.from('events').upload(fileName, file);
+      
+      // Lấy link public
+      final imageUrl = supabase.storage.from('events').getPublicUrl(fileName);
+      
+      setState(() {
+        _imageUrlController.text = imageUrl;
+      });
+      if (mounted) NotificationService.showSuccess(context, 'Tải ảnh lên thành công!');
+    } catch (e) {
+      if (mounted) NotificationService.showError(context, 'Lỗi tải ảnh: Hãy đảm bảo đã chạy script SQL tạo bucket "events". Lỗi: $e');
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -223,9 +256,33 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
-                controller: _imageUrlController,
-                decoration: const InputDecoration(labelText: 'Đường dẫn ảnh Cover (Tùy chọn)'),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _imageUrlController,
+                      decoration: const InputDecoration(labelText: 'Đường dẫn ảnh Cover (Tùy chọn)'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _isUploading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: _pickAndUploadImage,
+                          icon: const Icon(Icons.upload_file),
+                          label: const Text('Tải ảnh'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                ],
               ),
               const SizedBox(height: 24),
 
