@@ -32,6 +32,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _organizerController; // ✅ Giữ 1 bản duy nhất
   late TextEditingController _imageUrlController;
+  late TextEditingController _locationController;
+  late TextEditingController _categoryController;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -52,6 +54,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     _descriptionController = TextEditingController(text: widget.event?.description ?? '');
     _organizerController = TextEditingController(text: widget.event?.organizer ?? '');
     _imageUrlController = TextEditingController(text: widget.event?.imageUrl ?? '');
+    _locationController = TextEditingController(text: widget.event?.location ?? '');
+    _categoryController = TextEditingController(text: widget.event?.category ?? '');
     _startDate = widget.event?.startDate;
     _endDate = widget.event?.endDate;
     _selectedOrganizerId = widget.event?.userId;
@@ -67,6 +71,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
     _descriptionController.dispose();
     _organizerController.dispose();
     _imageUrlController.dispose();
+    _locationController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -163,6 +169,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
       'description': _descriptionController.text,
       'organizer': _organizerController.text,
       'image_url': _imageUrlController.text.isNotEmpty ? _imageUrlController.text : null,
+      'location': _locationController.text.isNotEmpty ? _locationController.text : null,
+      'category': _categoryController.text.isNotEmpty ? _categoryController.text : null,
       'start_date': _startDate!.toIso8601String(),
       'end_date': _endDate!.toIso8601String(),
       'user_id': (widget.role == 'admin') ? _selectedOrganizerId : widget.userId,
@@ -252,6 +260,20 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Mô tả chi tiết'),
                 maxLines: 4,
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _locationController,
+                decoration: const InputDecoration(labelText: 'Địa điểm tổng (Location)'),
+                validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _categoryController,
+                decoration: const InputDecoration(labelText: 'Danh mục (Category) - VD: Công nghệ'),
                 validator: (v) => (v == null || v.isEmpty) ? 'Không được để trống' : null,
               ),
               const SizedBox(height: 16),
